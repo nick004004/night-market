@@ -230,33 +230,53 @@
         };
 
         let previousOrderCount = 0;
+        let audioCtx = null;
+
+        // 🔊 브라우저 사운드 활성화 (최초 터치 시 실행)
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+        window.addEventListener('click', initAudioContext, { once: true });
+        window.addEventListener('touchstart', initAudioContext, { once: true });
 
         // 🔔 [주문 등록 알림음] 경쾌한 삐비빅 톤
         function playAlertSound() {
             try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
                 
+                const now = audioCtx.currentTime;
+
                 const osc1 = audioCtx.createOscillator();
                 const gain1 = audioCtx.createGain();
                 osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(880, audioCtx.currentTime);
-                gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc1.frequency.setValueAtTime(880, now);
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
                 osc1.connect(gain1);
                 gain1.connect(audioCtx.destination);
-                osc1.start();
-                osc1.stop(audioCtx.currentTime + 0.2);
+                osc1.start(now);
+                osc1.stop(now + 0.2);
 
                 const osc2 = audioCtx.createOscillator();
                 const gain2 = audioCtx.createGain();
                 osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.15);
-                gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.15);
-                gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                osc2.frequency.setValueAtTime(1320, now + 0.15);
+                gain2.gain.setValueAtTime(0.3, now + 0.15);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
                 osc2.connect(gain2);
                 gain2.connect(audioCtx.destination);
-                osc2.start(audioCtx.currentTime + 0.15);
-                osc2.stop(audioCtx.currentTime + 0.4);
+                osc2.start(now + 0.15);
+                osc2.stop(now + 0.4);
             } catch (e) {
                 console.log('Audio error:', e);
             }
@@ -265,29 +285,36 @@
         // 🎵 [조리완료 알림음] 산뜻하고 부드러운 완료 화음 톤
         function playCompleteSound() {
             try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const now = audioCtx.currentTime;
+
                 const osc1 = audioCtx.createOscillator();
                 const gain1 = audioCtx.createGain();
                 osc1.type = 'triangle';
-                osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-                gain1.gain.setValueAtTime(0.25, audioCtx.currentTime);
-                gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
                 osc1.connect(gain1);
                 gain1.connect(audioCtx.destination);
-                osc1.start();
-                osc1.stop(audioCtx.currentTime + 0.25);
+                osc1.start(now);
+                osc1.stop(now + 0.25);
 
                 const osc2 = audioCtx.createOscillator();
                 const gain2 = audioCtx.createGain();
                 osc2.type = 'triangle';
-                osc2.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.12); // G5
-                gain2.gain.setValueAtTime(0.25, audioCtx.currentTime + 0.12);
-                gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                osc2.frequency.setValueAtTime(783.99, now + 0.12); // G5
+                gain2.gain.setValueAtTime(0.25, now + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
                 osc2.connect(gain2);
                 gain2.connect(audioCtx.destination);
-                osc2.start(audioCtx.currentTime + 0.12);
-                osc2.stop(audioCtx.currentTime + 0.4);
+                osc2.start(now + 0.12);
+                osc2.stop(now + 0.4);
             } catch (e) {
                 console.log('Audio error:', e);
             }
@@ -300,7 +327,7 @@
             if (data) {
                 const newOrders = data.orders || [];
                 
-                // 💡 핵심 수정: 주문 배열의 '길이'가 늘어났을 때뿐만 아니라, 가장 최근 주문의 ID를 비교하여 확실하게 새 주문 감지 시 삐비빅 소리 재생
+                // 새 주문이 추가되었을 때만 삐비빅 소리 재생
                 if (newOrders.length > 0 && previousOrderCount !== 0 && newOrders.length > previousOrderCount) {
                     playAlertSound();
                 }
@@ -482,12 +509,11 @@
             }
         }
 
-        // 조리완료 처리 (완료 효과음 재생 및 히스토리 기록)
         window.completeOrder = function(id) {
             const order = orders.find(o => o.id == id);
             if(!order) return;
 
-            playCompleteSound(); // 🎵 조리완료 사운드 재생 (차분한 화음)
+            playCompleteSound(); // 🎵 조리완료 사운드 재생
 
             if(order.type === '포장') {
                 stats.takeout[order.menu] = (stats.takeout[order.menu] || 0) + order.qty;
