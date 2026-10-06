@@ -154,8 +154,8 @@
                 <div class="form-group">
                     <label>구분 / Order Type (선택 필수)</label>
                     <div class="option-group">
-                        <button type="button" class="option-btn type-btn" data-type="포장">포장 (Take out)</button>
-                        <button type="button" class="option-btn type-btn" data-type="바로">바로-다회용기 (Reusable)</button>
+                        <button type="button" class="option-btn type-btn" data-type="포장">포장 (Takeout)</button>
+                        <button type="button" class="option-btn type-btn" data-type="바로">바로 (Dine-in)</button>
                     </div>
                 </div>
                 
@@ -199,8 +199,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>주문자 / Customer Name</label>
-                    <input type="text" id="customerNameInput" class="text-input" placeholder="" autocomplete="off">
+                    <label>주문자 / Customer Name (필수 입력)</label>
+                    <input type="text" id="customerNameInput" class="text-input" placeholder="이름을 입력해주세요" autocomplete="off" required>
                 </div>
 
                 <div class="btn-group">
@@ -422,6 +422,19 @@
                             if (noneBtn) noneBtn.classList.remove('active');
                             selectedNotes = selectedNotes.filter(n => n !== '없음');
 
+                            // '더 맵게'와 '아이가 먹음' 상호 배타적 처리 (동시 선택 불가)
+                            if (opt === '더 맵게') {
+                                selectedNotes = selectedNotes.filter(n => n !== '아이가 먹음');
+                                document.querySelectorAll('.note-btn').forEach(b => {
+                                    if(b.getAttribute('data-note') === '아이가 먹음') b.classList.remove('active');
+                                });
+                            } else if (opt === '아이가 먹음') {
+                                selectedNotes = selectedNotes.filter(n => n !== '더 맵게');
+                                document.querySelectorAll('.note-btn').forEach(b => {
+                                    if(b.getAttribute('data-note') === '더 맵게') b.classList.remove('active');
+                                });
+                            }
+
                             if (selectedNotes.includes(opt)) {
                                 selectedNotes = selectedNotes.filter(n => n !== opt);
                                 ev.target.classList.remove('active');
@@ -469,7 +482,12 @@
             }
 
             const customerInput = document.getElementById('customerNameInput').value.trim();
-            const customerName = customerInput !== '' ? customerInput : '손님';
+            if (!customerInput) {
+                alert('주문자 이름을 입력해주세요!');
+                document.getElementById('customerNameInput').focus();
+                return;
+            }
+            const customerName = customerInput;
 
             let finalNote = selectedNotes.join(', ');
             if (selectedMenu === '팟타이') {
@@ -558,7 +576,7 @@
                 }
             });
 
-            document.getElementById('customerNameInput').value = (order.customer === '손님') ? '' : order.customer;
+            document.getElementById('customerNameInput').value = order.customer;
 
             document.getElementById('formTitle').innerHTML = `<span>✏️ 주문 수정 중</span>`;
             document.getElementById('submitBtn').innerText = '수정 완료 반영 💾';
@@ -617,7 +635,7 @@
                 menu: order.menu,
                 note: order.note || '없음',
                 qty: order.qty,
-                customer: order.customer || '손님'
+                customer: order.customer
             });
 
             orders = orders.filter(o => o.id !== id);
@@ -710,7 +728,7 @@
                             <span>${order.menu} <strong style="color:#ff9500;">x ${order.qty}</strong></span>
                             <span class="customer-name">👤 ${order.customer}</span>
                         </div>
-                        <div class="time">주문 시간: ${order.time}</div>
+                        <div class="time">주문자 입력 시간: ${order.time}</div>
                     </div>
                     <div class="card-btn-group">
                         <button class="big-action-btn done-big-btn" onclick="completeOrder(${order.id})">조리 완료 ✅</button>
@@ -764,7 +782,6 @@
             if (!stats.history || stats.history.length === 0) {
                 historyHtml += `<tr><td colspan="4" style="color:#888; padding:15px;">완료된 내역이 없습니다.</td></tr>`;
             } else {
-                // 최신순 정렬
                 const reversedHistory = [...stats.history].reverse();
                 reversedHistory.forEach(h => {
                     historyHtml += `
