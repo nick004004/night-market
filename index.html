@@ -231,7 +231,7 @@
 
         let audioCtx = null;
 
-        // 🔔 [주문 등록 알림음] 주문 등록 버튼을 누를 때 직접 재생되는 삐비빅 톤
+        // 🔔 [주문 등록 알림음] 주문 등록 시 띵동 벨소리
         function playAlertSound() {
             try {
                 if (!audioCtx) {
@@ -246,64 +246,41 @@
                 const osc1 = audioCtx.createOscillator();
                 const gain1 = audioCtx.createGain();
                 osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(880, now);
-                gain1.gain.setValueAtTime(0.5, now);
-                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                osc1.frequency.setValueAtTime(1046.50, now); // C6
+                gain1.gain.setValueAtTime(0.4, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
                 osc1.connect(gain1);
                 gain1.connect(audioCtx.destination);
                 osc1.start(now);
-                osc1.stop(now + 0.2);
+                osc1.stop(now + 0.15);
 
                 const osc2 = audioCtx.createOscillator();
                 const gain2 = audioCtx.createGain();
                 osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(1320, now + 0.15);
-                gain2.gain.setValueAtTime(0.5, now + 0.15);
-                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc2.frequency.setValueAtTime(1567.98, now + 0.12); // G6
+                gain2.gain.setValueAtTime(0.4, now + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
                 osc2.connect(gain2);
                 gain2.connect(audioCtx.destination);
-                osc2.start(now + 0.15);
-                osc2.stop(now + 0.4);
+                osc2.start(now + 0.12);
+                osc2.stop(now + 0.35);
             } catch (e) {
                 console.log('Audio error:', e);
             }
         }
 
-        // 🎵 [조리완료 알림음] 조리완료 버튼을 누를 때 재생되는 화음 톤
-        function playCompleteSound() {
-            try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
-                const now = audioCtx.currentTime;
-
-                const osc1 = audioCtx.createOscillator();
-                const gain1 = audioCtx.createGain();
-                osc1.type = 'triangle';
-                osc1.frequency.setValueAtTime(523.25, now);
-                gain1.gain.setValueAtTime(0.3, now);
-                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                osc1.connect(gain1);
-                gain1.connect(audioCtx.destination);
-                osc1.start(now);
-                osc1.stop(now + 0.25);
-
-                const osc2 = audioCtx.createOscillator();
-                const gain2 = audioCtx.createGain();
-                osc2.type = 'triangle';
-                osc2.frequency.setValueAtTime(783.99, now + 0.12);
-                gain2.gain.setValueAtTime(0.3, now + 0.12);
-                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                osc2.connect(gain2);
-                gain2.connect(audioCtx.destination);
-                osc2.start(now + 0.12);
-                osc2.stop(now + 0.4);
-            } catch (e) {
-                console.log('Audio error:', e);
+        // 🗣️ [조리완료 음성 안내] 브라우저 음성 합성 (TTS) 기능으로 "조리 완료!" 말하기
+        function speakCompleteText(text) {
+            if ('speechSynthesis' in window) {
+                // 기존에 말하고 있는 게 있다면 중단하고 즉시 말하기
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR'; // 한국어 설정
+                utterance.rate = 1.1;     // 속도 (조금 활기차게)
+                utterance.pitch = 1.0;    // 음높이
+                
+                window.speechSynthesis.speak(utterance);
             }
         }
 
@@ -373,7 +350,6 @@
             });
         });
 
-        // 🚀 주문 등록 버튼을 누르는 '직접 터치 순간'에 소리 재생 후 클라우드 저장
         document.getElementById('orderForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -382,7 +358,7 @@
                 return;
             }
 
-            playAlertSound(); // 🔔 주문 등록 소리 즉시 재생!
+            playAlertSound(); // 🔔 주문 등록 띵동 소리
 
             const editId = document.getElementById('editId').value;
 
@@ -456,7 +432,7 @@
                 }
             });
 
-            document.getElementById('formTitle').innerHTML = `<span>✏️ 주문 수정 중 (#${order.menu})</span>`;
+            document.getElementById('formTitle').innerHTML = `<span>✏ 주문 수정 중 (#${order.menu})</span>`;
             document.getElementById('submitBtn').innerText = '수정 완료 반영 💾';
             document.getElementById('cancelEditBtn').style.display = 'block';
             document.getElementById('formCard').classList.add('editing-mode-bg');
@@ -494,7 +470,7 @@
             const order = orders.find(o => o.id == id);
             if(!order) return;
 
-            playCompleteSound(); // 🎵 조리완료 사운드 재생
+            speakCompleteText("조리 완료!"); // 🗣️ 사람 목소리로 "조리 완료!" 음성 출력
 
             if(order.type === '포장') {
                 stats.takeout[order.menu] = (stats.takeout[order.menu] || 0) + order.qty;
