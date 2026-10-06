@@ -16,10 +16,16 @@
         /* 금일 누적 요약 대시보드 카드 */
         .summary-card { background: #1c1c1e; color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .summary-title { font-size: 0.95rem; font-weight: bold; margin-bottom: 10px; color: #ff9f0a; display: flex; justify-content: space-between; align-items: center; }
+        .summary-title-btns { display: flex; gap: 6px; }
         .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .summary-box { background: #2c2c2e; padding: 10px; border-radius: 8px; text-align: center; }
         .summary-box h3 { font-size: 0.8rem; color: #98989f; margin-bottom: 4px; }
         .summary-box .stat-val { font-size: 1rem; font-weight: bold; color: #fff; }
+
+        /* 상단 즉시 확인용 현재 대기 주문 요약 카드 */
+        .live-summary-card { background: #007aff; color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,122,255,0.25); }
+        .live-summary-title { font-size: 0.95rem; font-weight: bold; margin-bottom: 8px; color: #ffeb3b; display: flex; justify-content: space-between; align-items: center; }
+        .live-summary-content { font-size: 1.25rem; font-weight: 900; text-align: center; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 8px; letter-spacing: -0.5px; }
 
         .card { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .card h2 { font-size: 1.05rem; margin-bottom: 12px; color: #007aff; display: flex; justify-content: space-between; align-items: center; }
@@ -27,11 +33,9 @@
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 600; color: #555; }
         
-        /* 버튼 선택 그룹 (공통) */
         .option-group { display: flex; gap: 6px; }
         .option-btn { flex: 1; padding: 12px 5px; border: 2px solid #ddd; background: #fff; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; text-align: center; transition: all 0.2s; color: #555; }
         
-        /* 선택 활성화 스타일 */
         .option-btn.type-btn.active.takeout { background: #ff3b30; color: white; border-color: #ff3b30; }
         .option-btn.type-btn.active.here { background: #34c759; color: white; border-color: #34c759; }
         .option-btn.menu-btn.active { background: #007aff; color: white; border-color: #007aff; }
@@ -63,7 +67,6 @@
         .order-info .details { font-size: 1.05rem; color: #333; font-weight: 600; }
         .order-info .time { font-size: 0.75rem; color: #888; margin-top: 4px; }
 
-        /* 하단 버튼 그룹: 가로로 꽉 차게 초대형 사이즈로 배치 */
         .card-btn-group { display: flex; gap: 8px; width: 100%; }
         .big-action-btn { padding: 16px 10px; border-radius: 8px; font-size: 1.05rem; font-weight: bold; border: none; cursor: pointer; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; }
         .done-big-btn { background: #34c759; color: white; font-size: 1.15rem; flex: 2; }
@@ -73,6 +76,18 @@
         
         .empty-msg { text-align: center; color: #888; padding: 30px; font-size: 0.9rem; }
         .editing-mode-bg { background-color: #fff8e1 !important; border: 2px dashed #ff9500; }
+
+        /* 통계 보기 모달 팝업 스타일 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 15px; }
+        .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 14px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 85vh; display: flex; flex-direction: column; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .modal-header h3 { font-size: 1.2rem; color: #1a1a1a; }
+        .close-modal-btn { background: #e0e0e0; border: none; font-size: 1rem; font-weight: bold; padding: 5px 12px; border-radius: 6px; cursor: pointer; }
+        .modal-body { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .stat-section-title { font-size: 0.95rem; font-weight: bold; color: #007aff; margin-top: 5px; }
+        .stat-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .stat-table th, .stat-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .stat-table th { background: #f8f9fa; color: #333; }
     </style>
     <!-- Firebase SDK 로드 -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -90,7 +105,10 @@
         <div class="summary-card">
             <div class="summary-title">
                 <span>📊 금일 누적 조리완료 현황</span>
-                <button onclick="resetStats()" style="background:transparent; border:1px solid #555; color:#aaa; font-size:0.7rem; padding:3px 6px; border-radius:4px; cursor:pointer;">통계 초기화</button>
+                <div class="summary-title-btns">
+                    <button onclick="openStatsModal()" style="background:#007aff; border:none; color:white; font-size:0.75rem; font-weight:bold; padding:4px 8px; border-radius:4px; cursor:pointer;">📊 통계보기</button>
+                    <button onclick="resetStats()" style="background:transparent; border:1px solid #555; color:#aaa; font-size:0.75rem; padding:4px 6px; border-radius:4px; cursor:pointer;">통계초기화</button>
+                </div>
             </div>
             <div class="summary-grid">
                 <div class="summary-box">
@@ -104,6 +122,17 @@
             </div>
         </div>
 
+        <!-- 상단 즉시 확인용 현재 대기 주문 요약 카드 -->
+        <div class="live-summary-card">
+            <div class="live-summary-title">
+                <span>🚨 현재 대기 중인 주문 요약</span>
+                <span id="liveTotalCount" style="font-size:0.8rem; background:rgba(0,0,0,0.2); padding:2px 8px; border-radius:10px;">총 0개</span>
+            </div>
+            <div class="live-summary-content" id="liveSummaryText">
+                대기 중인 주문이 없습니다.
+            </div>
+        </div>
+
         <!-- 주문 입력 및 수정 패드 -->
         <div class="card" id="formCard">
             <h2 id="formTitle">
@@ -112,7 +141,6 @@
             <form id="orderForm">
                 <input type="hidden" id="editId" value="">
                 
-                <!-- 1. 포장 / 바로 선택 -->
                 <div class="form-group">
                     <label>구분 (선택 필수)</label>
                     <div class="option-group">
@@ -121,7 +149,6 @@
                     </div>
                 </div>
                 
-                <!-- 2. 메뉴 선택 -->
                 <div class="form-group">
                     <label>메뉴 선택 (선택 필수)</label>
                     <div class="option-group">
@@ -130,7 +157,6 @@
                     </div>
                 </div>
 
-                <!-- 3. 특이사항 선택 -->
                 <div class="form-group">
                     <label>특이사항 (선택 필수)</label>
                     <div class="option-group">
@@ -140,7 +166,6 @@
                     </div>
                 </div>
                 
-                <!-- 4. 수량 선택 -->
                 <div class="form-group">
                     <label>수량 선택 (선택 필수)</label>
                     <div class="option-group">
@@ -172,8 +197,20 @@
         </div>
     </div>
 
+    <!-- 통계 상세 보기 팝업 모달 -->
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📈 금일 조리 완료 상세 통계</h3>
+                <button class="close-modal-btn" onclick="closeStatsModal()">닫기 ✖</button>
+            </div>
+            <div class="modal-body" id="modalStatsBody">
+                <!-- 통계 내용 동적 삽입 -->
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 🚀 방금 만드신 본인의 Firebase Realtime Database URL 연동
         const firebaseConfig = {
             databaseURL: "https://night-market-order-8a9ac-default-rtdb.firebaseio.com/"
         };
@@ -188,12 +225,13 @@
         let orders = [];
         let stats = {
             takeout: { 팟타이: 0, 문어꼬치: 0 },
-            here: { 팟타이: 0, 문어꼬치: 0 }
+            here: { 팟타이: 0, 문어꼬치: 0 },
+            history: []
         };
 
         let previousOrderCount = 0;
 
-        // 🔔 게임 효과음 재생 함수 (Web Audio API)
+        // 🔔 1. 주문 등록 알림음 (경쾌한 삐비빅 톤)
         function playAlertSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -204,10 +242,8 @@
                 osc1.frequency.setValueAtTime(880, audioCtx.currentTime);
                 gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
                 gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-                
                 osc1.connect(gain1);
                 gain1.connect(audioCtx.destination);
-                
                 osc1.start();
                 osc1.stop(audioCtx.currentTime + 0.2);
 
@@ -217,10 +253,8 @@
                 osc2.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.15);
                 gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.15);
                 gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-                
                 osc2.connect(gain2);
                 gain2.connect(audioCtx.destination);
-                
                 osc2.start(audioCtx.currentTime + 0.15);
                 osc2.stop(audioCtx.currentTime + 0.4);
             } catch (e) {
@@ -228,33 +262,64 @@
             }
         }
 
-        // 🔥 Firebase 실시간 리스너 연결 (데이터가 바뀌면 즉시 화면 자동 갱신)
+        // 🎵 2. [신규] 조리완료 알림음 (산뜻하고 부드러운 완료 화음 톤)
+        function playCompleteSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // 첫 번째 음 (낮은 도)
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'triangle';
+                osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                gain1.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start();
+                osc1.stop(audioCtx.currentTime + 0.25);
+
+                // 두 번째 음 (솔 - 높은 화음)
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.12); // G5
+                gain2.gain.setValueAtTime(0.25, audioCtx.currentTime + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(audioCtx.currentTime + 0.12);
+                osc2.stop(audioCtx.currentTime + 0.4);
+            } catch (e) {
+                console.log('Audio error:', e);
+            }
+        }
+
         db.ref('night_market').on('value', (snapshot) => {
             const data = snapshot.val();
             document.getElementById('syncStatus').innerText = '🟢 실시간 동기화 활성화됨';
             
             if (data) {
                 const newOrders = data.orders || [];
-                // 새 주문이 늘어났을 때만 알림음 재생
                 if (newOrders.length > previousOrderCount && previousOrderCount !== 0) {
                     playAlertSound();
                 }
                 previousOrderCount = newOrders.length;
                 orders = newOrders;
-                stats = data.stats || { takeout: { 팟타이: 0, 문어꼬치: 0 }, here: { 팟타이: 0, 문어꼬치: 0 } };
+                stats = data.stats || { takeout: { 팟타이: 0, 문어꼬치: 0 }, here: { 팟타이: 0, 문어꼬치: 0 }, history: [] };
             } else {
                 orders = [];
-                stats = { takeout: { 팟타이: 0, 문어꼬치: 0 }, here: { 팟타이: 0, 문어꼬치: 0 } };
+                stats = { takeout: { 팟타이: 0, 문어꼬치: 0 }, here: { 팟타이: 0, 문어꼬치: 0 }, history: [] };
                 previousOrderCount = 0;
             }
             renderOrders();
             renderStats();
+            renderLiveSummary();
         }, (error) => {
             document.getElementById('syncStatus').innerText = '🔴 동기화 오류 발생';
             console.error(error);
         });
 
-        // 데이터 서버에 저장 함수
         function syncToCloud() {
             db.ref('night_market').set({
                 orders: orders,
@@ -262,7 +327,6 @@
             });
         }
 
-        // 1. 타입 버튼 이벤트
         const typeButtons = document.querySelectorAll('.type-btn');
         typeButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -276,7 +340,6 @@
             });
         });
 
-        // 2. 메뉴 버튼 이벤트
         const menuButtons = document.querySelectorAll('.menu-btn');
         menuButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -286,7 +349,6 @@
             });
         });
 
-        // 3. 특이사항 버튼 이벤트
         const noteButtons = document.querySelectorAll('.note-btn');
         noteButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -296,7 +358,6 @@
             });
         });
 
-        // 4. 수량 버튼 이벤트
         const qtyButtons = document.querySelectorAll('.qty-btn');
         qtyButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -306,7 +367,6 @@
             });
         });
 
-        // 주문 등록 또는 수정 반영
         document.getElementById('orderForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -331,13 +391,16 @@
                     return order;
                 });
             } else {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
                 const newOrder = {
                     id: Date.now(),
                     type: selectedType,
                     menu: selectedMenu,
                     note: selectedNote,
                     qty: selectedQty,
-                    time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    time: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    hourKey: `${hours}:00` // 09:00, 10:00, 11:00 형식으로 저장
                 };
                 orders.push(newOrder);
             }
@@ -346,7 +409,6 @@
             resetForm();
         });
 
-        // 수정 모드 진입
         window.editOrder = function(id) {
             const order = orders.find(o => o.id == id);
             if(!order) return;
@@ -393,7 +455,6 @@
             document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 폼 초기화
         window.resetForm = function() {
             document.getElementById('editId').value = '';
             document.getElementById('orderForm').reset();
@@ -413,7 +474,6 @@
             qtyButtons.forEach(b => b.classList.remove('active'));
         }
 
-        // 삭제 처리
         window.deleteOrder = function(id) {
             if(confirm('이 주문을 삭제하시겠습니까?')) {
                 orders = orders.filter(order => order.id !== id);
@@ -421,10 +481,12 @@
             }
         }
 
-        // 조리완료 처리
+        // 조리완료 처리 (완료 효과음 재생 및 히스토리 기록)
         window.completeOrder = function(id) {
             const order = orders.find(o => o.id == id);
             if(!order) return;
+
+            playCompleteSound(); // 🎵 조리완료 사운드 재생
 
             if(order.type === '포장') {
                 stats.takeout[order.menu] = (stats.takeout[order.menu] || 0) + order.qty;
@@ -432,16 +494,26 @@
                 stats.here[order.menu] = (stats.here[order.menu] || 0) + order.qty;
             }
 
+            if(!stats.history) stats.history = [];
+            stats.history.push({
+                time: order.time,
+                hourKey: order.hourKey || '00:00',
+                type: order.type,
+                menu: order.menu,
+                note: order.note || '없음',
+                qty: order.qty
+            });
+
             orders = orders.filter(o => o.id !== id);
             syncToCloud();
         }
 
-        // 통계 초기화
         window.resetStats = function() {
             if(confirm('금일 누적 조리 통계를 초기화하시겠습니까?')) {
                 stats = {
                     takeout: { 팟타이: 0, 문어꼬치: 0 },
-                    here: { 팟타이: 0, 문어꼬치: 0 }
+                    here: { 팟타이: 0, 문어꼬치: 0 },
+                    history: []
                 };
                 syncToCloud();
             }
@@ -450,6 +522,39 @@
         function renderStats() {
             document.getElementById('statTakeout').innerText = `팟타이 ${stats.takeout['팟타이']}개 / 문어 ${stats.takeout['문어꼬치']}개`;
             document.getElementById('statHere').innerText = `팟타이 ${stats.here['팟타이']}개 / 문어 ${stats.here['문어꼬치']}개`;
+        }
+
+        function renderLiveSummary() {
+            const summaryTextEl = document.getElementById('liveSummaryText');
+            const totalCountEl = document.getElementById('liveTotalCount');
+            
+            let menuTotals = { 팟타이: 0, 문어꼬치: 0 };
+            let totalOrdersCount = 0;
+
+            orders.forEach(order => {
+                if(menuTotals[order.menu] !== undefined) {
+                    menuTotals[order.menu] += order.qty;
+                } else {
+                    menuTotals[order.menu] = order.qty;
+                }
+                totalOrdersCount += order.qty;
+            });
+
+            totalCountEl.innerText = `총 대기 수량: ${totalOrdersCount}개`;
+
+            if (orders.length === 0) {
+                summaryTextEl.innerText = "대기 중인 주문 없음 👍";
+                return;
+            }
+
+            let summaryParts = [];
+            for (let menu in menuTotals) {
+                if (menuTotals[menu] > 0) {
+                    summaryParts.push(`${menu} ${menuTotals[menu]}개`);
+                }
+            }
+
+            summaryTextEl.innerText = summaryParts.length > 0 ? summaryParts.join(' / ') : "대기 중인 주문 없음 👍";
         }
 
         function renderOrders() {
@@ -494,6 +599,92 @@
                 `;
                 container.appendChild(card);
             });
+        }
+
+        // 통계 보기 모달 열기 (09:00, 10:00 형식 정렬 포함)
+        window.openStatsModal = function() {
+            const modalBody = document.getElementById('modalStatsBody');
+            const history = stats.history || [];
+
+            let totalCompletedQty = 0;
+            let hourlyStats = {};
+            let menuStats = { 팟타이: 0, 문어꼬치: 0 };
+            let typeStats = { 포장: 0, 바로: 0 };
+
+            history.forEach(item => {
+                totalCompletedQty += item.qty;
+                
+                // 시간대별 집계 (09:00, 10:00 형식)
+                let hKey = item.hourKey || '00:00';
+                if(!hourlyStats[hKey]) hourlyStats[hKey] = 0;
+                hourlyStats[hKey] += item.qty;
+
+                // 메뉴별 집계
+                if(menuStats[item.menu] !== undefined) menuStats[item.menu] += item.qty;
+                else menuStats[item.menu] = item.qty;
+
+                // 구분별 집계
+                if(typeStats[item.type] !== undefined) typeStats[item.type] += item.qty;
+                else typeStats[item.type] = item.qty;
+            });
+
+            let html = `
+                <div style="background:#f8f9fa; padding:12px; border-radius:8px; text-align:center;">
+                    <div style="font-size:0.85rem; color:#666;">총 조리완료 수량</div>
+                    <div style="font-size:1.5rem; font-weight:bold; color:#007aff;">${totalCompletedQty}개</div>
+                </div>
+
+                <div class="stat-section-title">🕒 시간대별 조리 현황</div>
+                <table class="stat-table">
+                    <tr><th>시간대</th><th>조리 수량</th></tr>
+            `;
+
+            let sortedHours = Object.keys(hourlyStats).sort();
+            if(sortedHours.length === 0) {
+                html += `<tr><td colspan="2" style="color:#888;">완료된 조리 내역이 없습니다.</td></tr>`;
+            } else {
+                sortedHours.forEach(h => {
+                    html += `<tr><td><b>${h}</b></td><td>${hourlyStats[h]}개</td></tr>`;
+                });
+            }
+            html += `</table>`;
+
+            html += `
+                <div class="stat-section-title">📋 메뉴별 / 구분별 누적</div>
+                <table class="stat-table">
+                    <tr><th>구분 / 메뉴</th><th>수량</th></tr>
+                    <tr><td>🛍️ 포장</td><td><b>${typeStats['포장']}개</b></td></tr>
+                    <tr><td>🪑 바로 (매장)</td><td><b>${typeStats['바로']}개</b></td></tr>
+                    <tr><td>🍜 팟타이</td><td><b>${menuStats['팟타이']}개</b></td></tr>
+                    <tr><td>🐙 문어꼬치</td><td><b>${menuStats['문어꼬치']}개</b></td></tr>
+                </table>
+
+                <div class="stat-section-title">📜 조리완료 상세 내역 (${history.length}건)</div>
+                <table class="stat-table">
+                    <tr><th>완료시간</th><th>구분</th><th>메뉴</th><th>특이사항</th><th>수량</th></tr>
+            `;
+
+            if(history.length === 0) {
+                html += `<tr><td colspan="5" style="color:#888;">내역이 없습니다.</td></tr>`;
+            } else {
+                [...history].reverse().forEach(item => {
+                    html += `<tr>
+                        <td>${item.time}</td>
+                        <td>${item.type}</td>
+                        <td><b>${item.menu}</b></td>
+                        <td>${item.note}</td>
+                        <td><b>${item.qty}개</b></td>
+                    </tr>`;
+                });
+            }
+            html += `</table>`;
+
+            modalBody.innerHTML = html;
+            document.getElementById('statsModal').style.display = 'flex';
+        }
+
+        window.closeStatsModal = function() {
+            document.getElementById('statsModal').style.display = 'none';
         }
     </script>
 </body>
