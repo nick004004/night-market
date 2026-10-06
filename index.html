@@ -157,12 +157,11 @@
                     </div>
                 </div>
 
+                <!-- 메뉴에 따라 동적으로 변경되는 특이사항/옵션 영역 -->
                 <div class="form-group">
-                    <label>특이사항 (선택 필수)</label>
-                    <div class="option-group">
+                    <label id="optionLabel">옵션 / 특이사항 (선택 필수)</label>
+                    <div class="option-group" id="noteContainer">
                         <button type="button" class="option-btn note-btn" data-note="없음">없음</button>
-                        <button type="button" class="option-btn note-btn" data-note="더 맵게">더 맵게 🔥</button>
-                        <button type="button" class="option-btn note-btn" data-note="아이가 먹음">아이가 먹음 👶</button>
                     </div>
                 </div>
                 
@@ -246,7 +245,7 @@
                 const osc1 = audioCtx.createOscillator();
                 const gain1 = audioCtx.createGain();
                 osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(1046.50, now); // C6
+                osc1.frequency.setValueAtTime(1046.50, now);
                 gain1.gain.setValueAtTime(0.4, now);
                 gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
                 osc1.connect(gain1);
@@ -257,7 +256,7 @@
                 const osc2 = audioCtx.createOscillator();
                 const gain2 = audioCtx.createGain();
                 osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(1567.98, now + 0.12); // G6
+                osc2.frequency.setValueAtTime(1567.98, now + 0.12);
                 gain2.gain.setValueAtTime(0.4, now + 0.12);
                 gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
                 osc2.connect(gain2);
@@ -269,17 +268,14 @@
             }
         }
 
-        // 🗣️ [조리완료 음성 안내] 브라우저 음성 합성 (TTS) 기능으로 "조리 완료!" 말하기
+        // 🗣️ [조리완료 음성 안내] "조리 완료!" 말하기
         function speakCompleteText(text) {
             if ('speechSynthesis' in window) {
-                // 기존에 말하고 있는 게 있다면 중단하고 즉시 말하기
                 window.speechSynthesis.cancel();
-                
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'ko-KR'; // 한국어 설정
-                utterance.rate = 1.1;     // 속도 (조금 활기차게)
-                utterance.pitch = 1.0;    // 음높이
-                
+                utterance.lang = 'ko-KR';
+                utterance.rate = 1.1;
+                utterance.pitch = 1.0;
                 window.speechSynthesis.speak(utterance);
             }
         }
@@ -329,17 +325,57 @@
                 menuButtons.forEach(b => b.classList.remove('active'));
                 selectedMenu = e.target.getAttribute('data-menu');
                 e.target.classList.add('active');
+
+                // 메뉴 선택에 따른 특이사항/소스 버튼 동적 생성
+                updateNoteButtons(selectedMenu);
             });
         });
 
-        const noteButtons = document.querySelectorAll('.note-btn');
-        noteButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                noteButtons.forEach(b => b.classList.remove('active'));
-                selectedNote = e.target.getAttribute('data-note');
-                e.target.classList.add('active');
+        // 🔄 메뉴에 따라 특이사항 버튼을 다르게 렌더링하는 함수
+        function updateNoteButtons(menu, presetNote = null) {
+            const container = document.getElementById('noteContainer');
+            const label = document.getElementById('optionLabel');
+            container.innerHTML = '';
+            selectedNote = presetNote; // 기존 선택 초기화 또는 프리셋 적용
+
+            let options = [];
+            if (menu === '팟타이') {
+                label.innerText = '특이사항 (선택 필수)';
+                options = ['없음', '더 맵게', '아이가 먹음'];
+            } else if (menu === '문어꼬치') {
+                label.innerText = '소스 선택 (선택 필수)';
+                options = ['기본 소스', '매운 소스'];
+            }
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'option-btn note-btn';
+                if(opt.includes('맵게')) btn.innerText = opt + ' 🔥';
+                else if(opt.includes('아이')) btn.innerText = opt + ' 👶';
+                else btn.innerText = opt;
+                
+                btn.setAttribute('data-note', opt);
+
+                if (selectedNote === opt) {
+                    btn.classList.add('active');
+                }
+
+                btn.addEventListener('click', (ev) => {
+                    document.querySelectorAll('.note-btn').forEach(b => b.classList.remove('active'));
+                    ev.target.classList.add('active');
+                    selectedNote = opt;
+                });
+
+                container.appendChild(btn);
             });
-        });
+
+            // 기본값 자동 선택 (옵션이 바뀔 때 첫 번째 항목 자동 선택)
+            if (!selectedNote && options.length > 0) {
+                selectedNote = options[0];
+                container.querySelector('.note-btn').classList.add('active');
+            }
+        }
 
         const qtyButtons = document.querySelectorAll('.qty-btn');
         qtyButtons.forEach(btn => {
@@ -354,7 +390,7 @@
             e.preventDefault();
             
             if(!selectedType || !selectedMenu || !selectedNote || !selectedQty) {
-                alert('구분, 메뉴, 특이사항, 수량을 모두 선택해주세요!');
+                alert('구분, 메뉴, 옵션/특이사항, 수량을 모두 선택해주세요!');
                 return;
             }
 
@@ -416,13 +452,8 @@
                 }
             });
 
-            selectedNote = order.note;
-            noteButtons.forEach(b => {
-                b.classList.remove('active');
-                if(b.getAttribute('data-note') === selectedNote) {
-                    b.classList.add('active');
-                }
-            });
+            // 메뉴에 맞는 옵션 버튼을 만들고 기존 주문의 특이사항/소스를 선택 상태로 복원
+            updateNoteButtons(selectedMenu, order.note);
 
             selectedQty = order.qty;
             qtyButtons.forEach(b => {
@@ -455,8 +486,11 @@
 
             typeButtons.forEach(b => b.classList.remove('active', 'takeout', 'here'));
             menuButtons.forEach(b => b.classList.remove('active'));
-            noteButtons.forEach(b => b.classList.remove('active'));
+            document.getElementById('noteContainer.innerHTML = `<button type="button" class="option-btn note-btn">메뉴를 먼저 선택해주세요</button>`;');
             qtyButtons.forEach(b => b.classList.remove('active'));
+            
+            // 초기화 시 특이사항 영역 리셋
+            document.getElementById('noteContainer').innerHTML = `<span style="font-size:0.85rem; color:#888;">메뉴를 먼저 선택해주세요</span>`;
         }
 
         window.deleteOrder = function(id) {
@@ -470,7 +504,7 @@
             const order = orders.find(o => o.id == id);
             if(!order) return;
 
-            speakCompleteText("조리 완료!"); // 🗣️ 사람 목소리로 "조리 완료!" 음성 출력
+            speakCompleteText("조리 완료!"); // 🗣️ "조리 완료!" 음성 출력
 
             if(order.type === '포장') {
                 stats.takeout[order.menu] = (stats.takeout[order.menu] || 0) + order.qty;
@@ -641,7 +675,7 @@
 
                 <div class="stat-section-title">📜 조리완료 상세 내역 (${history.length}건)</div>
                 <table class="stat-table">
-                    <tr><th>완료시간</th><th>구분</th><th>메뉴</th><th>특이사항</th><th>수량</th></tr>
+                    <tr><th>완료시간</th><th>구분</th><th>메뉴</th><th>옵션/특이사항</th><th>수량</th></tr>
             `;
 
             if(history.length === 0) {
