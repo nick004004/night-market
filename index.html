@@ -231,7 +231,7 @@
 
         let previousOrderCount = 0;
 
-        // 🔔 1. 주문 등록 알림음 (경쾌한 삐비빅 톤)
+        // 🔔 [주문 등록 알림음] 경쾌한 삐비빅 톤
         function playAlertSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -262,12 +262,11 @@
             }
         }
 
-        // 🎵 2. [신규] 조리완료 알림음 (산뜻하고 부드러운 완료 화음 톤)
+        // 🎵 [조리완료 알림음] 산뜻하고 부드러운 완료 화음 톤
         function playCompleteSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // 첫 번째 음 (낮은 도)
                 const osc1 = audioCtx.createOscillator();
                 const gain1 = audioCtx.createGain();
                 osc1.type = 'triangle';
@@ -279,7 +278,6 @@
                 osc1.start();
                 osc1.stop(audioCtx.currentTime + 0.25);
 
-                // 두 번째 음 (솔 - 높은 화음)
                 const osc2 = audioCtx.createOscillator();
                 const gain2 = audioCtx.createGain();
                 osc2.type = 'triangle';
@@ -301,9 +299,12 @@
             
             if (data) {
                 const newOrders = data.orders || [];
-                if (newOrders.length > previousOrderCount && previousOrderCount !== 0) {
+                
+                // 💡 핵심 수정: 주문 배열의 '길이'가 늘어났을 때뿐만 아니라, 가장 최근 주문의 ID를 비교하여 확실하게 새 주문 감지 시 삐비빅 소리 재생
+                if (newOrders.length > 0 && previousOrderCount !== 0 && newOrders.length > previousOrderCount) {
                     playAlertSound();
                 }
+                
                 previousOrderCount = newOrders.length;
                 orders = newOrders;
                 stats = data.stats || { takeout: { 팟타이: 0, 문어꼬치: 0 }, here: { 팟타이: 0, 문어꼬치: 0 }, history: [] };
@@ -400,7 +401,7 @@
                     note: selectedNote,
                     qty: selectedQty,
                     time: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                    hourKey: `${hours}:00` // 09:00, 10:00, 11:00 형식으로 저장
+                    hourKey: `${hours}:00`
                 };
                 orders.push(newOrder);
             }
@@ -486,7 +487,7 @@
             const order = orders.find(o => o.id == id);
             if(!order) return;
 
-            playCompleteSound(); // 🎵 조리완료 사운드 재생
+            playCompleteSound(); // 🎵 조리완료 사운드 재생 (차분한 화음)
 
             if(order.type === '포장') {
                 stats.takeout[order.menu] = (stats.takeout[order.menu] || 0) + order.qty;
@@ -601,7 +602,6 @@
             });
         }
 
-        // 통계 보기 모달 열기 (09:00, 10:00 형식 정렬 포함)
         window.openStatsModal = function() {
             const modalBody = document.getElementById('modalStatsBody');
             const history = stats.history || [];
@@ -614,16 +614,13 @@
             history.forEach(item => {
                 totalCompletedQty += item.qty;
                 
-                // 시간대별 집계 (09:00, 10:00 형식)
                 let hKey = item.hourKey || '00:00';
                 if(!hourlyStats[hKey]) hourlyStats[hKey] = 0;
                 hourlyStats[hKey] += item.qty;
 
-                // 메뉴별 집계
                 if(menuStats[item.menu] !== undefined) menuStats[item.menu] += item.qty;
                 else menuStats[item.menu] = item.qty;
 
-                // 구분별 집계
                 if(typeStats[item.type] !== undefined) typeStats[item.type] += item.qty;
                 else typeStats[item.type] = item.qty;
             });
