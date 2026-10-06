@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>야시장 실시간 통합 주문 보드</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f0f2f5; color: #333; padding: 15px; }
+        header { text-align: center; margin-bottom: 12px; }
+        h1 { font-size: 1.4rem; color: #1a1a1a; margin-bottom: 4px; }
+        .connection-status { font-size: 0.8rem; color: #2e7d32; background: #e8f5e9; padding: 4px 10px; border-radius: 12px; display: inline-block; font-weight: bold; }
+        
+        .container { display: flex; flex-direction: column; gap: 15px; max-width: 600px; margin: 0 auto; }
+        
+        /* 금일 누적 요약 대시보드 카드 */
+        .summary-card { background: #1c1c1e; color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .summary-title { font-size: 0.95rem; font-weight: bold; margin-bottom: 10px; color: #ff9f0a; display: flex; justify-content: space-between; align-items: center; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .summary-box { background: #2c2c2e; padding: 10px; border-radius: 8px; text-align: center; }
+        .summary-box h3 { font-size: 0.8rem; color: #98989f; margin-bottom: 4px; }
+        .summary-box .stat-val { font-size: 1rem; font-weight: bold; color: #fff; }
+
+        .card { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 1.05rem; margin-bottom: 12px; color: #007aff; display: flex; justify-content: space-between; align-items: center; }
+        
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 600; color: #555; }
+        
+        /* 버튼 선택 그룹 (공통) */
+        .option-group { display: flex; gap: 6px; }
+        .option-btn { flex: 1; padding: 12px 5px; border: 2px solid #ddd; background: #fff; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; text-align: center; transition: all 0.2s; color: #555; }
+        
+        /* 선택 활성화 스타일 */
+        .option-btn.type-btn.active.takeout { background: #ff3b30; color: white; border-color: #ff3b30; }
+        .option-btn.type-btn.active.here { background: #34c759; color: white; border-color: #34c759; }
+        .option-btn.menu-btn.active { background: #007aff; color: white; border-color: #007aff; }
+        .option-btn.note-btn.active { background: #5856d6; color: white; border-color: #5856d6; }
+        .option-btn.qty-btn.active { background: #ff9500; color: white; border-color: #ff9500; }
+
+        .btn-group { display: flex; gap: 8px; margin-top: 15px; }
+        .action-btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; }
+        .submit-btn { background: #007aff; color: white; }
+        .submit-btn:active { background: #0056b3; }
+        .cancel-btn { background: #e0e0e0; color: #333; display: none; }
+
+        /* 주문 목록 스타일 */
+        .order-count { font-size: 0.8rem; background: #007aff; color: white; padding: 2px 8px; border-radius: 10px; }
+        .order-items { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; max-height: 500px; overflow-y: auto; }
+        
+        .order-card { background: #fff; border-left: 8px solid #ccc; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 12px; }
+        .order-card.takeout { border-left-color: #ff3b30; }
+        .order-card.here { border-left-color: #34c759; }
+
+        .order-info { width: 100%; }
+        .order-info .badge-group { display: flex; gap: 5px; margin-bottom: 5px; flex-wrap: wrap; }
+        .order-info .badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: white; display: inline-block; }
+        .badge.takeout { background: #ff3b30; }
+        .badge.here { background: #34c759; }
+        .badge.note { background: #5856d6; }
+        
+        .order-info .menu-name { font-size: 1.3rem; font-weight: bold; margin: 4px 0; color: #111; }
+        .order-info .details { font-size: 1.05rem; color: #333; font-weight: 600; }
+        .order-info .time { font-size: 0.75rem; color: #888; margin-top: 4px; }
+
+        /* 하단 버튼 그룹: 가로로 꽉 차게 초대형 사이즈로 배치 */
+        .card-btn-group { display: flex; gap: 8px; width: 100%; }
+        .big-action-btn { padding: 16px 10px; border-radius: 8px; font-size: 1.05rem; font-weight: bold; border: none; cursor: pointer; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; }
+        .done-big-btn { background: #34c759; color: white; font-size: 1.15rem; flex: 2; }
+        .done-big-btn:active { background: #238636; }
+        .edit-big-btn { background: #ff9500; color: white; flex: 1; }
+        .delete-big-btn { background: #ff3b30; color: white; flex: 1; }
+        
+        .empty-msg { text-align: center; color: #888; padding: 30px; font-size: 0.9rem; }
+        .editing-mode-bg { background-color: #fff8e1 !important; border: 2px dashed #ff9500; }
+    </style>
+    <!-- Firebase SDK 로드 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>🍢 야시장 실시간 통합 주문 보드</h1>
+        <div class="connection-status" id="syncStatus">🔄 실시간 클라우드 연결 중...</div>
+    </header>
+
+    <div class="container">
+        <!-- 금일 누적 완료 수량 대시보드 -->
+        <div class="summary-card">
+            <div class="summary-title">
+                <span>📊 금일 누적 조리완료 현황</span>
+                <button onclick="resetStats()" style="background:transparent; border:1px solid #555; color:#aaa; font-size:0.7rem; padding:3px 6px; border-radius:4px; cursor:pointer;">통계 초기화</button>
+            </div>
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <h3>🛍️ 포장 누적</h3>
+                    <div class="stat-val" id="statTakeout">팟타이 0 / 문어 0</div>
+                </div>
+                <div class="summary-box">
+                    <h3>🪑 바로(매장) 누적</h3>
+                    <div class="stat-val" id="statHere">팟타이 0 / 문어 0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 주문 입력 및 수정 패드 -->
+        <div class="card" id="formCard">
+            <h2 id="formTitle">
+                <span>📝 새 주문 등록</span>
+            </h2>
+            <form id="orderForm">
+                <input type="hidden" id="editId" value="">
+                
+                <!-- 1. 포장 / 바로 선택 -->
+                <div class="form-group">
+                    <label>구분 (선택 필수)</label>
+                    <div class="option-group">
+                        <button type="button" class="option-btn type-btn" data-type="포장">포장</button>
+                        <button type="button" class="option-btn type-btn" data-type="바로">바로 (먹고가기)</button>
+                    </div>
+                </div>
+                
+                <!-- 2. 메뉴 선택 -->
+                <div class="form-group">
+                    <label>메뉴 선택 (선택 필수)</label>
+                    <div class="option-group">
+                        <button type="button" class="option-btn menu-btn" data-menu="팟타이">팟타이</button>
+                        <button type="button" class="option-btn menu-btn" data-menu="문어꼬치">문어꼬치</button>
+                    </div>
+                </div>
+
+                <!-- 3. 특이사항 선택 -->
+                <div class="form-group">
+                    <label>특이사항 (선택 필수)</label>
+                    <div class="option-group">
+                        <button type="button" class="option-btn note-btn" data-note="없음">없음</button>
+                        <button type="button" class="option-btn note-btn" data-note="더 맵게">더 맵게 🔥</button>
+                        <button type="button" class="option-btn note-btn" data-note="아이가 먹음">아이가 먹음 👶</button>
+                    </div>
+                </div>
+                
+                <!-- 4. 수량 선택 -->
+                <div class="form-group">
+                    <label>수량 선택 (선택 필수)</label>
+                    <div class="option-group">
+                        <button type="button" class="option-btn qty-btn" data-qty="1">1</button>
+                        <button type="button" class="option-btn qty-btn" data-qty="2">2</button>
+                        <button type="button" class="option-btn qty-btn" data-qty="3">3</button>
+                        <button type="button" class="option-btn qty-btn" data-qty="4">4</button>
+                        <button type="button" class="option-btn qty-btn" data-qty="5">5</button>
+                        <button type="button" class="option-btn qty-btn" data-qty="6">6</button>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" id="cancelEditBtn" class="action-btn cancel-btn" onclick="resetForm()">수정 취소</button>
+                    <button type="submit" id="submitBtn" class="action-btn submit-btn">주문 등록하기 🚀</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 실시간 주문 목록 -->
+        <div class="card order-list-section">
+            <h2>
+                <span>🔥 실시간 주문 현황 (선착순)</span>
+                <span id="orderCountBadge" class="order-count">0개</span>
+            </h2>
+            <div id="orderListContainer" class="order-items">
+                <div class="empty-msg">등록된 주문이 없습니다.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🚀 방금 만드신 본인의 Firebase Realtime Database URL 연동
+        const firebaseConfig = {
+            databaseURL: "https://night-market-order-8a9ac-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let selectedType = null;
+        let selectedMenu = null;
+        let selectedNote = null;
+        let selectedQty = null;
+
+        let orders = [];
+        let stats = {
+            takeout: { 팟타이: 0, 문어꼬치: 0 },
+            here: { 팟타이: 0, 문어꼬치: 0 }
+        };
+
+        let previousOrderCount = 0;
+
+        // 🔔 게임 효과음 재생 함수 (Web Audio API)
+        function playAlertSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                
+                osc1.start();
+                osc1.stop(audioCtx.currentTime + 0.2);
+
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.15);
+                gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.15);
+                gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                
+                osc2.start(audioCtx.currentTime + 0.15);
+                osc2.stop(audioCtx.currentTime + 0.4);
+            } catch (e) {
+                console.log('Audio error:', e);
+            }
+        }
+
+        // 🔥 Firebase 실시간 리스너 연결 (데이터가 바뀌면 즉시 화면 자동 갱신)
+        db.ref('night_market').on('value', (snapshot) => {
+            const data = snapshot.val();
+            document.getElementById('syncStatus').innerText = '🟢 실시간 동기화 활성화됨';
+            
+            if (data) {
+                const newOrders = data.orders || [];
+                // 새 주문이 늘어났을 때만 알림음 재생
+                if (newOrders.length > previousOrderCount && previousOrderCount !== 0) {
+                    playAlertSound();
+                }
+                previousOrderCount = newOrders.length;
+                orders = newOrders;
+                stats = data.stats || { takeout: { 팟타이: 0, 문어꼬치: 0 }, here: { 팟타이: 0, 문어꼬치: 0 } };
+            } else {
+                orders = [];
+                stats = { takeout: { 팟타이: 0, 문어꼬치: 0 }, here: { 팟타이: 0, 문어꼬치: 0 } };
+                previousOrderCount = 0;
+            }
+            renderOrders();
+            renderStats();
+        }, (error) => {
+            document.getElementById('syncStatus').innerText = '🔴 동기화 오류 발생';
+            console.error(error);
+        });
+
+        // 데이터 서버에 저장 함수
+        function syncToCloud() {
+            db.ref('night_market').set({
+                orders: orders,
+                stats: stats
+            });
+        }
+
+        // 1. 타입 버튼 이벤트
+        const typeButtons = document.querySelectorAll('.type-btn');
+        typeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                typeButtons.forEach(b => b.classList.remove('active', 'takeout', 'here'));
+                selectedType = e.target.getAttribute('data-type');
+                if(selectedType === '포장') {
+                    e.target.classList.add('active', 'takeout');
+                } else {
+                    e.target.classList.add('active', 'here');
+                }
+            });
+        });
+
+        // 2. 메뉴 버튼 이벤트
+        const menuButtons = document.querySelectorAll('.menu-btn');
+        menuButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                menuButtons.forEach(b => b.classList.remove('active'));
+                selectedMenu = e.target.getAttribute('data-menu');
+                e.target.classList.add('active');
+            });
+        });
+
+        // 3. 특이사항 버튼 이벤트
+        const noteButtons = document.querySelectorAll('.note-btn');
+        noteButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                noteButtons.forEach(b => b.classList.remove('active'));
+                selectedNote = e.target.getAttribute('data-note');
+                e.target.classList.add('active');
+            });
+        });
+
+        // 4. 수량 버튼 이벤트
+        const qtyButtons = document.querySelectorAll('.qty-btn');
+        qtyButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                qtyButtons.forEach(b => b.classList.remove('active'));
+                selectedQty = parseInt(e.target.getAttribute('data-qty'));
+                e.target.classList.add('active');
+            });
+        });
+
+        // 주문 등록 또는 수정 반영
+        document.getElementById('orderForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            if(!selectedType || !selectedMenu || !selectedNote || !selectedQty) {
+                alert('구분, 메뉴, 특이사항, 수량을 모두 선택해주세요!');
+                return;
+            }
+
+            const editId = document.getElementById('editId').value;
+
+            if(editId) {
+                orders = orders.map(order => {
+                    if(order.id == editId) {
+                        return {
+                            ...order,
+                            type: selectedType,
+                            menu: selectedMenu,
+                            note: selectedNote,
+                            qty: selectedQty
+                        };
+                    }
+                    return order;
+                });
+            } else {
+                const newOrder = {
+                    id: Date.now(),
+                    type: selectedType,
+                    menu: selectedMenu,
+                    note: selectedNote,
+                    qty: selectedQty,
+                    time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                };
+                orders.push(newOrder);
+            }
+
+            syncToCloud();
+            resetForm();
+        });
+
+        // 수정 모드 진입
+        window.editOrder = function(id) {
+            const order = orders.find(o => o.id == id);
+            if(!order) return;
+
+            document.getElementById('editId').value = order.id;
+            
+            selectedType = order.type;
+            typeButtons.forEach(b => {
+                b.classList.remove('active', 'takeout', 'here');
+                if(b.getAttribute('data-type') === selectedType) {
+                    b.classList.add('active', selectedType === '포장' ? 'takeout' : 'here');
+                }
+            });
+
+            selectedMenu = order.menu;
+            menuButtons.forEach(b => {
+                b.classList.remove('active');
+                if(b.getAttribute('data-menu') === selectedMenu) {
+                    b.classList.add('active');
+                }
+            });
+
+            selectedNote = order.note;
+            noteButtons.forEach(b => {
+                b.classList.remove('active');
+                if(b.getAttribute('data-note') === selectedNote) {
+                    b.classList.add('active');
+                }
+            });
+
+            selectedQty = order.qty;
+            qtyButtons.forEach(b => {
+                b.classList.remove('active');
+                if(parseInt(b.getAttribute('data-qty')) === selectedQty) {
+                    b.classList.add('active');
+                }
+            });
+
+            document.getElementById('formTitle').innerHTML = `<span>✏️ 주문 수정 중 (#${order.menu})</span>`;
+            document.getElementById('submitBtn').innerText = '수정 완료 반영 💾';
+            document.getElementById('cancelEditBtn').style.display = 'block';
+            document.getElementById('formCard').classList.add('editing-mode-bg');
+            
+            document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 폼 초기화
+        window.resetForm = function() {
+            document.getElementById('editId').value = '';
+            document.getElementById('orderForm').reset();
+            document.getElementById('formTitle').innerHTML = `<span>📝 새 주문 등록</span>`;
+            document.getElementById('submitBtn').innerText = '주문 등록하기 🚀';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('formCard').classList.remove('editing-mode-bg');
+            
+            selectedType = null;
+            selectedMenu = null;
+            selectedNote = null;
+            selectedQty = null;
+
+            typeButtons.forEach(b => b.classList.remove('active', 'takeout', 'here'));
+            menuButtons.forEach(b => b.classList.remove('active'));
+            noteButtons.forEach(b => b.classList.remove('active'));
+            qtyButtons.forEach(b => b.classList.remove('active'));
+        }
+
+        // 삭제 처리
+        window.deleteOrder = function(id) {
+            if(confirm('이 주문을 삭제하시겠습니까?')) {
+                orders = orders.filter(order => order.id !== id);
+                syncToCloud();
+            }
+        }
+
+        // 조리완료 처리
+        window.completeOrder = function(id) {
+            const order = orders.find(o => o.id == id);
+            if(!order) return;
+
+            if(order.type === '포장') {
+                stats.takeout[order.menu] = (stats.takeout[order.menu] || 0) + order.qty;
+            } else {
+                stats.here[order.menu] = (stats.here[order.menu] || 0) + order.qty;
+            }
+
+            orders = orders.filter(o => o.id !== id);
+            syncToCloud();
+        }
+
+        // 통계 초기화
+        window.resetStats = function() {
+            if(confirm('금일 누적 조리 통계를 초기화하시겠습니까?')) {
+                stats = {
+                    takeout: { 팟타이: 0, 문어꼬치: 0 },
+                    here: { 팟타이: 0, 문어꼬치: 0 }
+                };
+                syncToCloud();
+            }
+        }
+
+        function renderStats() {
+            document.getElementById('statTakeout').innerText = `팟타이 ${stats.takeout['팟타이']}개 / 문어 ${stats.takeout['문어꼬치']}개`;
+            document.getElementById('statHere').innerText = `팟타이 ${stats.here['팟타이']}개 / 문어 ${stats.here['문어꼬치']}개`;
+        }
+
+        function renderOrders() {
+            const container = document.getElementById('orderListContainer');
+            const countBadge = document.getElementById('orderCountBadge');
+            
+            countBadge.innerText = `${orders.length}개`;
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="empty-msg">모든 주문이 완료되었습니다! 👍</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            orders.sort((a, b) => a.id - b.id);
+
+            orders.forEach((order, index) => {
+                const card = document.createElement('div');
+                card.className = `order-card ${order.type === '포장' ? 'takeout' : 'here'}`;
+                
+                let noteBadgeHtml = '';
+                if(order.note && order.note !== '없음') {
+                    noteBadgeHtml = `<span class="badge note">${order.note}</span>`;
+                }
+
+                card.innerHTML = `
+                    <div class="order-info">
+                        <div class="badge-group">
+                            <span class="badge ${order.type === '포장' ? 'takeout' : 'here'}">${order.type}</span>
+                            ${noteBadgeHtml}
+                            <span style="font-size:0.75rem; font-weight:bold; color:#666;">#${index + 1}</span>
+                        </div>
+                        <div class="menu-name">${order.menu}</div>
+                        <div class="details">수량: ${order.qty}개</div>
+                        <div class="time">${order.time}</div>
+                    </div>
+                    <div class="card-btn-group">
+                        <button class="big-action-btn done-big-btn" onclick="completeOrder(${order.id})">조리완료 ✅</button>
+                        <button class="big-action-btn edit-big-btn" onclick="editOrder(${order.id})">수정 ✏</button>
+                        <button class="big-action-btn delete-big-btn" onclick="deleteOrder(${order.id})">삭제 ❌</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
