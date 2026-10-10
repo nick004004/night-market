@@ -43,6 +43,8 @@
         .option-btn.pay-btn.active.cash { background: #ff9500; color: white; border-color: #ff9500; }
         .option-btn.note-btn.active { background: #5856d6; color: white; border-color: #5856d6; }
         .option-btn.peanut-btn.active { background: #af52de; color: white; border-color: #af52de; }
+        .option-btn.pt-qty-btn.active, .option-btn.oc-qty-btn.active { background: #ff9500; color: white; border-color: #ff9500; }
+        .option-btn.octopus-btn.active { background: #007aff; color: white; border-color: #007aff; }
 
         /* 메뉴별 개별 설정 박스 */
         .menu-config-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 12px; margin-top: 10px; }
@@ -478,8 +480,10 @@
                 btn.type = 'button';
                 btn.className = `option-btn pt-qty-btn ${menuDetails['팟타이'].qty === i ? 'active' : ''}`;
                 btn.innerText = i;
+                
+                const val = i;
                 btn.addEventListener('click', () => {
-                    menuDetails['팟타이'].qty = i;
+                    menuDetails['팟타이'].qty = val;
                     renderPadthaiQty();
                 });
                 container.appendChild(btn);
@@ -496,8 +500,10 @@
                 btn.type = 'button';
                 btn.className = `option-btn peanut-btn ${menuDetails['팟타이'].peanut === opt ? 'active' : ''}`;
                 btn.innerText = opt === '땅콩 뿌려요' ? '땅콩 뿌려요 (Add Peanut)' : '땅콩 안뿌려요 (No Peanut)';
+                
+                const val = opt;
                 btn.addEventListener('click', () => {
-                    menuDetails['팟타이'].peanut = opt;
+                    menuDetails['팟타이'].peanut = val;
                     renderPeanutButtons();
                 });
                 container.appendChild(btn);
@@ -513,8 +519,10 @@
                 btn.type = 'button';
                 btn.className = `option-btn oc-qty-btn ${menuDetails['문어꼬치'].qty === i ? 'active' : ''}`;
                 btn.innerText = i;
+                
+                const val = i;
                 btn.addEventListener('click', () => {
-                    menuDetails['문어꼬치'].qty = i;
+                    menuDetails['문어꼬치'].qty = val;
                     renderOctopusQty();
                 });
                 container.appendChild(btn);
@@ -531,8 +539,10 @@
                 btn.type = 'button';
                 btn.className = `option-btn octopus-btn ${menuDetails['문어꼬치'].sauce === opt ? 'active' : ''}`;
                 btn.innerText = opt === '기본 소스' ? '기본 소스 (Original)' : '매운 소스 🔥 (Spicy)';
+                
+                const val = opt;
                 btn.addEventListener('click', () => {
-                    menuDetails['문어꼬치'].sauce = opt;
+                    menuDetails['문어꼬치'].sauce = val;
                     renderOctopusSauceButtons();
                 });
                 container.appendChild(btn);
@@ -618,7 +628,6 @@
 
             document.getElementById('editId').value = order.id;
             
-            // 구분 복원
             selectedType = order.type;
             typeButtons.forEach(b => {
                 b.classList.remove('active', 'takeout', 'here');
@@ -627,7 +636,6 @@
                 }
             });
 
-            // 결제 방식 복원
             selectedPay = order.payType || '계좌이체';
             payButtons.forEach(b => {
                 b.classList.remove('active', 'transfer', 'cash');
@@ -636,7 +644,6 @@
                 }
             });
 
-            // 메뉴복원
             if (order.menuDetails) {
                 menuDetails = JSON.parse(JSON.stringify(order.menuDetails));
                 selectedMenus = Object.keys(menuDetails);
