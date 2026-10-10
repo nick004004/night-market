@@ -34,21 +34,23 @@
         label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 600; color: #555; }
         
         .option-group { display: flex; gap: 6px; flex-wrap: wrap; }
-        .option-btn { flex: 1; min-width: 120px; padding: 12px 8px; border: 2px solid #ddd; background: #fff; border-radius: 8px; font-size: 0.9rem; font-weight: bold; cursor: pointer; text-align: center; transition: all 0.2s; color: #555; }
+        .option-btn { flex: 1; min-width: 100px; padding: 12px 8px; border: 2px solid #ddd; background: #fff; border-radius: 8px; font-size: 0.9rem; font-weight: bold; cursor: pointer; text-align: center; transition: all 0.2s; color: #555; }
         
         .option-btn.type-btn.active.takeout { background: #ff3b30; color: white; border-color: #ff3b30; }
         .option-btn.type-btn.active.here { background: #34c759; color: white; border-color: #34c759; }
         .option-btn.menu-btn.active { background: #007aff; color: white; border-color: #007aff; }
+        .option-btn.pay-btn.active.transfer { background: #5856d6; color: white; border-color: #5856d6; }
+        .option-btn.pay-btn.active.cash { background: #ff9500; color: white; border-color: #ff9500; }
         .option-btn.note-btn.active { background: #5856d6; color: white; border-color: #5856d6; }
         .option-btn.peanut-btn.active { background: #af52de; color: white; border-color: #af52de; }
-        .option-btn.qty-btn.active { background: #ff9500; color: white; border-color: #ff9500; }
 
-        /* 알레르기 안내 문구 스타일 */
+        /* 메뉴별 개별 설정 박스 */
+        .menu-config-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 12px; margin-top: 10px; }
+        .menu-config-title { font-size: 0.9rem; font-weight: bold; color: #007aff; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+
+        /* 알레르기 및 주요 안내 문구 스타일 */
         .allergy-notice { font-size: 0.75rem; color: #d32f2f; background: #ffebee; padding: 6px 10px; border-radius: 6px; margin-top: 6px; font-weight: 600; line-height: 1.3; }
-
-        /* 주문자 입력 텍스트박스 스타일 */
-        .text-input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; font-weight: bold; color: #333; outline: none; transition: border-color 0.2s; }
-        .text-input:focus { border-color: #007aff; }
+        .no-card-notice { font-size: 0.75rem; color: #d32f2f; background: #ffebee; padding: 6px 10px; border-radius: 6px; margin-top: 6px; font-weight: bold; display: block; }
 
         .btn-group { display: flex; gap: 8px; margin-top: 15px; }
         .action-btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; }
@@ -69,12 +71,12 @@
         .order-info .badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: white; display: inline-block; }
         .badge.takeout { background: #ff3b30; }
         .badge.here { background: #34c759; }
-        .badge.note { background: #5856d6; }
-        .badge.peanut { background: #af52de; }
+        .badge.transfer { background: #5856d6; }
+        .badge.cash { background: #ff9500; }
+        .badge.note { background: #007aff; }
         
         .order-info .menu-name { font-size: 1.25rem; font-weight: bold; margin: 4px 0; color: #111; display: flex; justify-content: space-between; align-items: center; }
-        .order-info .customer-name { font-size: 1.1rem; color: #007aff; background: #eef4ff; padding: 2px 8px; border-radius: 6px; font-weight: bold; }
-        .order-info .details { font-size: 1.05rem; color: #333; font-weight: 600; margin-top: 4px; }
+        .order-info .payment-type { font-size: 1rem; color: #333; background: #f0f0f5; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
         .order-info .time { font-size: 0.75rem; color: #888; margin-top: 4px; }
 
         .card-btn-group { display: flex; gap: 8px; width: 100%; }
@@ -158,49 +160,62 @@
                         <button type="button" class="option-btn type-btn" data-type="바로">바로-다회용기 (Reusable)</button>
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label>결제 방식 / Payment Method (선택 필수)</label>
+                    <div class="option-group">
+                        <button type="button" class="option-btn pay-btn active transfer" data-pay="계좌이체">💳 계좌이체 (account transfer)</button>
+                        <button type="button" class="option-btn pay-btn" data-pay="현금">💵 현금 (cash)</button>
+                    </div>
+                    <div class="no-card-notice">
+                        ⚠️ 카드 결제는 안 됩니다 (Card payment is NOT accepted)
+                    </div>
+                </div>
                 
                 <div class="form-group">
-                    <label>메뉴 선택 / Select Menu (선택 필수)</label>
-                    <div class="option-group">
+                    <label>메뉴 선택 / Select Menu (복수 선택 가능)</label>
+                    <div class="option-group" id="menuContainer">
                         <button type="button" class="option-btn menu-btn" data-menu="팟타이">팟타이 (Pad Thai)</button>
                         <button type="button" class="option-btn menu-btn" data-menu="문어꼬치">문어꼬치 (Octopus Skewer)</button>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label id="optionLabel">옵션 / Options (선택 필수)</label>
-                    <div class="option-group" id="noteContainer">
-                        <span style="font-size:0.85rem; color:#888;">메뉴를 먼저 선택해주세요 (Please select a menu first)</span>
+                <!-- 팟타이 개별 설정 영역 -->
+                <div class="menu-config-box" id="padthaiConfigBox" style="display: none;">
+                    <div class="menu-config-title">🍜 팟타이 상세 설정 (Pad Thai Detailed Order)</div>
+                    
+                    <div class="form-group">
+                        <label>수량 선택 / Quantity (1~4)</label>
+                        <div class="option-group" id="padthaiQtyContainer"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>특이사항 / Special Requests (복수 선택)</label>
+                        <div class="option-group" id="padthaiNoteContainer"></div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>땅콩 토핑 / Peanut Topping</label>
+                        <div class="option-group" id="peanutContainer"></div>
+                        <div class="allergy-notice">
+                            ⚠️ 땅콩 알레르기가 있으신 경우 말씀해 주세요! (Please let us know if you have a peanut allergy)
+                        </div>
                     </div>
                 </div>
 
-                <div class="form-group" id="peanutGroup" style="display: none;">
-                    <label>땅콩 토핑 / Peanut Topping</label>
-                    <div class="option-group" id="peanutContainer">
-                        <button type="button" class="option-btn peanut-btn" data-peanut="땅콩 뿌려요">땅콩 뿌려요 (Add Peanuts)</button>
-                        <button type="button" class="option-btn peanut-btn" data-peanut="땅콩 안뿌려요">땅콩 안뿌려요 (No Peanuts)</button>
+                <!-- 문어꼬치 개별 설정 영역 -->
+                <div class="menu-config-box" id="octopusConfigBox" style="display: none;">
+                    <div class="menu-config-title">🐙 문어꼬치 상세 설정 (Octopus Skewer Detailed Order)</div>
+                    
+                    <div class="form-group">
+                        <label>수량 선택 / Quantity (1~4)</label>
+                        <div class="option-group" id="octopusQtyContainer"></div>
                     </div>
-                    <div class="allergy-notice">
-                        ⚠️ 땅콩 알레르기가 있으신 경우 말씀해 주세요!<br>
-                        Please let us know if you have a peanut allergy!
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>수량 선택 / Quantity (선택 필수)</label>
-                    <div class="option-group">
-                        <button type="button" class="option-btn qty-btn" data-qty="1">1</button>
-                        <button type="button" class="option-btn qty-btn" data-qty="2">2</button>
-                        <button type="button" class="option-btn qty-btn" data-qty="3">3</button>
-                        <button type="button" class="option-btn qty-btn" data-qty="4">4</button>
-                        <button type="button" class="option-btn qty-btn" data-qty="5">5</button>
-                        <button type="button" class="option-btn qty-btn" data-qty="6">6</button>
-                    </div>
-                </div>
 
-                <div class="form-group">
-                    <label>주문자 / Customer Name (필수 입력)</label>
-                    <input type="text" id="customerNameInput" class="text-input" placeholder="이름을 입력해주세요" autocomplete="off" required>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>소스 선택 / Sauce Selection</label>
+                        <div class="option-group" id="octopusContainer"></div>
+                    </div>
                 </div>
 
                 <div class="btn-group">
@@ -242,10 +257,13 @@
         const db = firebase.database();
 
         let selectedType = null;
-        let selectedMenu = null;
-        let selectedNotes = [];
-        let selectedPeanut = '땅콩 뿌려요';
-        let selectedQty = null;
+        let selectedPay = '계좌이체';
+        let selectedMenus = [];
+        
+        let menuDetails = {
+            '팟타이': { qty: 1, notes: ['없음'], peanut: '땅콩 뿌려요' },
+            '문어꼬치': { qty: 1, sauce: '기본 소스' }
+        };
 
         let orders = [];
         let stats = {
@@ -330,6 +348,7 @@
             });
         }
 
+        // 포장 / 바로 선택
         const typeButtons = document.querySelectorAll('.type-btn');
         typeButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -343,50 +362,67 @@
             });
         });
 
-        const menuButtons = document.querySelectorAll('.menu-btn');
-        menuButtons.forEach(btn => {
+        // 결제 방식 선택 (계좌이체 / 현금)
+        const payButtons = document.querySelectorAll('.pay-btn');
+        payButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                menuButtons.forEach(b => b.classList.remove('active'));
-                selectedMenu = e.target.getAttribute('data-menu');
-                e.target.classList.add('active');
-
-                updateNoteButtons(selectedMenu);
+                payButtons.forEach(b => b.classList.remove('active', 'transfer', 'cash'));
+                selectedPay = e.target.getAttribute('data-pay');
+                if(selectedPay === '계좌이체') {
+                    e.target.classList.add('active', 'transfer');
+                } else {
+                    e.target.classList.add('active', 'cash');
+                }
             });
         });
 
-        function updateNoteButtons(menu, presetNotes = ['없음'], presetPeanut = '땅콩 뿌려요') {
-            const container = document.getElementById('noteContainer');
-            const label = document.getElementById('optionLabel');
-            const peanutGroup = document.getElementById('peanutGroup');
-            container.innerHTML = '';
-            
-            if (typeof presetNotes === 'string') {
-                selectedNotes = presetNotes.split(',').map(s => s.trim());
+        // 메뉴 다중 선택
+        const menuButtons = document.querySelectorAll('.menu-btn');
+        menuButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const menu = e.target.getAttribute('data-menu');
+                
+                if (selectedMenus.includes(menu)) {
+                    selectedMenus = selectedMenus.filter(m => m !== menu);
+                    e.target.classList.remove('active');
+                } else {
+                    selectedMenus.push(menu);
+                    e.target.classList.add('active');
+                }
+
+                updateDynamicOptionSections();
+            });
+        });
+
+        function updateDynamicOptionSections() {
+            const padthaiBox = document.getElementById('padthaiConfigBox');
+            const octopusBox = document.getElementById('octopusConfigBox');
+
+            if (selectedMenus.includes('팟타이')) {
+                padthaiBox.style.display = 'block';
+                renderPadthaiNotes();
+                renderPadthaiQty();
+                renderPeanutButtons();
             } else {
-                selectedNotes = [...presetNotes];
+                padthaiBox.style.display = 'none';
             }
 
-            let options = [];
-            if (menu === '팟타이') {
-                label.innerText = '특이사항 / Special Requests (복수 선택 가능)';
-                options = ['없음', '더 맵게', '아이가 먹음', '새우 알레르기 있음'];
-                peanutGroup.style.display = 'block';
-                
-                selectedPeanut = presetPeanut;
-                document.querySelectorAll('.peanut-btn').forEach(b => {
-                    b.classList.remove('active');
-                    if(b.getAttribute('data-peanut') === selectedPeanut) {
-                        b.classList.add('active');
-                    }
-                });
-            } else if (menu === '문어꼬치') {
-                label.innerText = '소스 선택 / Sauce Selection (단일 선택)';
-                options = ['기본 소스', '매운 소스'];
-                peanutGroup.style.display = 'none';
-                if(selectedNotes.length > 1 || !options.includes(selectedNotes[0])) {
-                    selectedNotes = ['기본 소스'];
-                }
+            if (selectedMenus.includes('문어꼬치')) {
+                octopusBox.style.display = 'block';
+                renderOctopusQty();
+                renderOctopusSauceButtons();
+            } else {
+                octopusBox.style.display = 'none';
             }
+        }
+
+        // 팟타이 특이사항
+        function renderPadthaiNotes() {
+            const container = document.getElementById('padthaiNoteContainer');
+            container.innerHTML = '';
+            
+            const options = ['없음', '더 맵게', '아이가 먹음', '새우 알레르기 있음'];
+            let currentNotes = menuDetails['팟타이'].notes;
 
             options.forEach(opt => {
                 const btn = document.createElement('button');
@@ -397,102 +433,144 @@
                 else if(opt === '더 맵게') btn.innerText = '더 맵게 🔥 (Spicier)';
                 else if(opt === '아이가 먹음') btn.innerText = '아이가 먹음 👶 (For Kids)';
                 else if(opt === '새우 알레르기 있음') btn.innerText = '새우 알레르기 있음 🦐 (Shrimp Allergy)';
-                else if(opt === '기본 소스') btn.innerText = '기본 소스 (Original Sauce)';
-                else if(opt === '매운 소스') btn.innerText = '매운 소스 🔥 (Spicy Sauce)';
                 else btn.innerText = opt;
                 
-                btn.setAttribute('data-note', opt);
-
-                if (selectedNotes.includes(opt)) {
+                if (currentNotes.includes(opt)) {
                     btn.classList.add('active');
                 }
 
-                btn.addEventListener('click', (ev) => {
-                    if (menu === '문어꼬치') {
-                        document.querySelectorAll('.note-btn').forEach(b => b.classList.remove('active'));
-                        ev.target.classList.add('active');
-                        selectedNotes = [opt];
+                btn.addEventListener('click', () => {
+                    if (opt === '없음') {
+                        currentNotes = ['없음'];
                     } else {
-                        if (opt === '없음') {
-                            document.querySelectorAll('.note-btn').forEach(b => b.classList.remove('active'));
-                            ev.target.classList.add('active');
-                            selectedNotes = ['없음'];
+                        currentNotes = currentNotes.filter(n => n !== '없음');
+
+                        if (opt === '더 맵게') {
+                            currentNotes = currentNotes.filter(n => n !== '아이가 먹음');
+                        } else if (opt === '아이가 먹음') {
+                            currentNotes = currentNotes.filter(n => n !== '더 맵게');
+                        }
+
+                        if (currentNotes.includes(opt)) {
+                            currentNotes = currentNotes.filter(n => n !== opt);
                         } else {
-                            const noneBtn = Array.from(document.querySelectorAll('.note-btn')).find(b => b.getAttribute('data-note') === '없음');
-                            if (noneBtn) noneBtn.classList.remove('active');
-                            selectedNotes = selectedNotes.filter(n => n !== '없음');
+                            currentNotes.push(opt);
+                        }
 
-                            // '더 맵게'와 '아이가 먹음' 상호 배타적 처리 (동시 선택 불가)
-                            if (opt === '더 맵게') {
-                                selectedNotes = selectedNotes.filter(n => n !== '아이가 먹음');
-                                document.querySelectorAll('.note-btn').forEach(b => {
-                                    if(b.getAttribute('data-note') === '아이가 먹음') b.classList.remove('active');
-                                });
-                            } else if (opt === '아이가 먹음') {
-                                selectedNotes = selectedNotes.filter(n => n !== '더 맵게');
-                                document.querySelectorAll('.note-btn').forEach(b => {
-                                    if(b.getAttribute('data-note') === '더 맵게') b.classList.remove('active');
-                                });
-                            }
-
-                            if (selectedNotes.includes(opt)) {
-                                selectedNotes = selectedNotes.filter(n => n !== opt);
-                                ev.target.classList.remove('active');
-                            } else {
-                                selectedNotes.push(opt);
-                                ev.target.classList.add('active');
-                            }
-
-                            if (selectedNotes.length === 0) {
-                                if (noneBtn) noneBtn.classList.add('active');
-                                selectedNotes = ['없음'];
-                            }
+                        if (currentNotes.length === 0) {
+                            currentNotes = ['없음'];
                         }
                     }
+                    menuDetails['팟타이'].notes = currentNotes;
+                    renderPadthaiNotes();
                 });
 
                 container.appendChild(btn);
             });
         }
 
-        const peanutButtons = document.querySelectorAll('.peanut-btn');
-        peanutButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                peanutButtons.forEach(b => b.classList.remove('active'));
-                selectedPeanut = e.target.getAttribute('data-peanut');
-                e.target.classList.add('active');
-            });
-        });
+        // 팟타이 수량 (1~4)
+        function renderPadthaiQty() {
+            const container = document.getElementById('padthaiQtyContainer');
+            container.innerHTML = '';
+            for(let i = 1; i <= 4; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `option-btn pt-qty-btn ${menuDetails['팟타이'].qty === i ? 'active' : ''}`;
+                btn.innerText = i;
+                btn.addEventListener('click', () => {
+                    menuDetails['팟타이'].qty = i;
+                    renderPadthaiQty();
+                });
+                container.appendChild(btn);
+            }
+        }
 
-        const qtyButtons = document.querySelectorAll('.qty-btn');
-        qtyButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                qtyButtons.forEach(b => b.classList.remove('active'));
-                selectedQty = parseInt(e.target.getAttribute('data-qty'));
-                e.target.classList.add('active');
+        // 팟타이 땅콩
+        function renderPeanutButtons() {
+            const container = document.getElementById('peanutContainer');
+            container.innerHTML = '';
+            const options = ['땅콩 뿌려요', '땅콩 안뿌려요'];
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `option-btn peanut-btn ${menuDetails['팟타이'].peanut === opt ? 'active' : ''}`;
+                btn.innerText = opt === '땅콩 뿌려요' ? '땅콩 뿌려요 (Add Peanut)' : '땅콩 안뿌려요 (No Peanut)';
+                btn.addEventListener('click', () => {
+                    menuDetails['팟타이'].peanut = opt;
+                    renderPeanutButtons();
+                });
+                container.appendChild(btn);
             });
-        });
+        }
+
+        // 문어꼬치 수량 (1~4)
+        function renderOctopusQty() {
+            const container = document.getElementById('octopusQtyContainer');
+            container.innerHTML = '';
+            for(let i = 1; i <= 4; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `option-btn oc-qty-btn ${menuDetails['문어꼬치'].qty === i ? 'active' : ''}`;
+                btn.innerText = i;
+                btn.addEventListener('click', () => {
+                    menuDetails['문어꼬치'].qty = i;
+                    renderOctopusQty();
+                });
+                container.appendChild(btn);
+            }
+        }
+
+        // 문어꼬치 소스
+        function renderOctopusSauceButtons() {
+            const container = document.getElementById('octopusContainer');
+            container.innerHTML = '';
+            const options = ['기본 소스', '매운 소스'];
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `option-btn octopus-btn ${menuDetails['문어꼬치'].sauce === opt ? 'active' : ''}`;
+                btn.innerText = opt === '기본 소스' ? '기본 소스 (Original)' : '매운 소스 🔥 (Spicy)';
+                btn.addEventListener('click', () => {
+                    menuDetails['문어꼬치'].sauce = opt;
+                    renderOctopusSauceButtons();
+                });
+                container.appendChild(btn);
+            });
+        }
 
         document.getElementById('orderForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
-            if(!selectedType || !selectedMenu || selectedNotes.length === 0 || !selectedQty) {
-                alert('구분, 메뉴, 옵션, 수량을 모두 선택해주세요!');
+            if(!selectedType) {
+                alert('구분(포장/바로)을 선택해주세요!');
                 return;
             }
 
-            const customerInput = document.getElementById('customerNameInput').value.trim();
-            if (!customerInput) {
-                alert('주문자 이름을 입력해주세요!');
-                document.getElementById('customerNameInput').focus();
+            if(selectedMenus.length === 0) {
+                alert('메뉴를 1개 이상 선택해주세요!');
                 return;
             }
-            const customerName = customerInput;
 
-            let finalNote = selectedNotes.join(', ');
-            if (selectedMenu === '팟타이') {
-                finalNote += ` / ${selectedPeanut}`;
-            }
+            let menuParts = [];
+            let detailParts = [];
+            let totalOrderQty = 0;
+
+            selectedMenus.forEach(menu => {
+                const q = menuDetails[menu].qty;
+                totalOrderQty += q;
+                menuParts.push(`${menu} x ${q}`);
+
+                if (menu === '팟타이') {
+                    const noteStr = menuDetails['팟타이'].notes.join(', ');
+                    detailParts.push(`팟타이[${noteStr} / ${menuDetails['팟타이'].peanut}]`);
+                } else if (menu === '문어꼬치') {
+                    detailParts.push(`문어꼬치[${menuDetails['문어꼬치'].sauce}]`);
+                }
+            });
+
+            const menuString = menuParts.join(' + ');
+            const finalNote = detailParts.join(' | ');
 
             playAlertSound();
 
@@ -504,10 +582,11 @@
                         return {
                             ...order,
                             type: selectedType,
-                            menu: selectedMenu,
+                            payType: selectedPay,
+                            menu: menuString,
                             note: finalNote,
-                            qty: selectedQty,
-                            customer: customerName
+                            qty: totalOrderQty,
+                            menuDetails: JSON.parse(JSON.stringify(menuDetails))
                         };
                     }
                     return order;
@@ -518,10 +597,11 @@
                 const newOrder = {
                     id: Date.now(),
                     type: selectedType,
-                    menu: selectedMenu,
+                    payType: selectedPay,
+                    menu: menuString,
                     note: finalNote,
-                    qty: selectedQty,
-                    customer: customerName,
+                    qty: totalOrderQty,
+                    menuDetails: JSON.parse(JSON.stringify(menuDetails)),
                     time: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     hourKey: `${hours}:00`
                 };
@@ -538,6 +618,7 @@
 
             document.getElementById('editId').value = order.id;
             
+            // 구분 복원
             selectedType = order.type;
             typeButtons.forEach(b => {
                 b.classList.remove('active', 'takeout', 'here');
@@ -546,37 +627,33 @@
                 }
             });
 
-            selectedMenu = order.menu;
-            menuButtons.forEach(b => {
-                b.classList.remove('active');
-                if(b.getAttribute('data-menu') === selectedMenu) {
-                    b.classList.add('active');
+            // 결제 방식 복원
+            selectedPay = order.payType || '계좌이체';
+            payButtons.forEach(b => {
+                b.classList.remove('active', 'transfer', 'cash');
+                if(b.getAttribute('data-pay') === selectedPay) {
+                    b.classList.add('active', selectedPay === '계좌이체' ? 'transfer' : 'cash');
                 }
             });
 
-            let baseNotes = ['없음'];
-            let peanutOpt = '땅콩 뿌려요';
-            if (order.note) {
-                if (order.menu === '팟타이' && order.note.includes('/')) {
-                    const parts = order.note.split('/');
-                    baseNotes = parts[0].split(',').map(s => s.trim());
-                    peanutOpt = parts[1].trim();
-                } else {
-                    baseNotes = order.note.split(',').map(s => s.trim());
-                }
+            // 메뉴복원
+            if (order.menuDetails) {
+                menuDetails = JSON.parse(JSON.stringify(order.menuDetails));
+                selectedMenus = Object.keys(menuDetails);
+            } else {
+                selectedMenus = order.menu.split(' + ').map(s => s.split(' x ')[0].trim());
             }
 
-            updateNoteButtons(selectedMenu, baseNotes, peanutOpt);
-
-            selectedQty = order.qty;
-            qtyButtons.forEach(b => {
-                b.classList.remove('active');
-                if(parseInt(b.getAttribute('data-qty')) === selectedQty) {
+            menuButtons.forEach(b => {
+                const m = b.getAttribute('data-menu');
+                if(selectedMenus.includes(m)) {
                     b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
                 }
             });
 
-            document.getElementById('customerNameInput').value = order.customer;
+            updateDynamicOptionSections();
 
             document.getElementById('formTitle').innerHTML = `<span>✏️ 주문 수정 중</span>`;
             document.getElementById('submitBtn').innerText = '수정 완료 반영 💾';
@@ -595,17 +672,21 @@
             document.getElementById('formCard').classList.remove('editing-mode-bg');
             
             selectedType = null;
-            selectedMenu = null;
-            selectedNotes = [];
-            selectedPeanut = '땅콩 뿌려요';
-            selectedQty = null;
+            selectedPay = '계좌이체';
+            selectedMenus = [];
+            menuDetails = {
+                '팟타이': { qty: 1, notes: ['없음'], peanut: '땅콩 뿌려요' },
+                '문어꼬치': { qty: 1, sauce: '기본 소스' }
+            };
 
             typeButtons.forEach(b => b.classList.remove('active', 'takeout', 'here'));
+            payButtons.forEach(b => {
+                b.classList.remove('active', 'transfer', 'cash');
+                if(b.getAttribute('data-pay') === '계좌이체') b.classList.add('active', 'transfer');
+            });
             menuButtons.forEach(b => b.classList.remove('active'));
-            document.getElementById('noteContainer').innerHTML = `<span style="font-size:0.85rem; color:#888;">메뉴를 먼저 선택해주세요 (Please select a menu first)</span>`;
-            document.getElementById('peanutGroup').style.display = 'none';
-            qtyButtons.forEach(b => b.classList.remove('active'));
-            document.getElementById('customerNameInput').value = '';
+            document.getElementById('padthaiConfigBox').style.display = 'none';
+            document.getElementById('octopusConfigBox').style.display = 'none';
         }
 
         window.deleteOrder = function(id) {
@@ -621,10 +702,24 @@
 
             speakCompleteText("조리 완료!");
 
-            if(order.type === '포장') {
-                stats.takeout[order.menu] = (stats.takeout[order.menu] || 0) + order.qty;
+            if (order.menuDetails) {
+                for (let [m, info] of Object.entries(order.menuDetails)) {
+                    if (order.type === '포장') {
+                        if (stats.takeout[m] !== undefined) stats.takeout[m] += info.qty;
+                    } else {
+                        if (stats.here[m] !== undefined) stats.here[m] += info.qty;
+                    }
+                }
             } else {
-                stats.here[order.menu] = (stats.here[order.menu] || 0) + order.qty;
+                const menusInOrder = order.menu.split(' + ');
+                menusInOrder.forEach(m => {
+                    const cleanName = m.split(' x ')[0].trim();
+                    if(order.type === '포장') {
+                        if(stats.takeout[cleanName] !== undefined) stats.takeout[cleanName] += order.qty;
+                    } else {
+                        if(stats.here[cleanName] !== undefined) stats.here[cleanName] += order.qty;
+                    }
+                });
             }
 
             if(!stats.history) stats.history = [];
@@ -632,10 +727,10 @@
                 time: order.time,
                 hourKey: order.hourKey || '00:00',
                 type: order.type,
+                payType: order.payType || '계좌이체',
                 menu: order.menu,
                 note: order.note || '없음',
-                qty: order.qty,
-                customer: order.customer
+                qty: order.qty
             });
 
             orders = orders.filter(o => o.id !== id);
@@ -666,10 +761,20 @@
             let totalOrdersCount = 0;
 
             orders.forEach(order => {
-                if(menuTotals[order.menu] !== undefined) {
-                    menuTotals[order.menu] += order.qty;
+                if (order.menuDetails) {
+                    for (let [m, info] of Object.entries(order.menuDetails)) {
+                        if (menuTotals[m] !== undefined) {
+                            menuTotals[m] += info.qty;
+                        }
+                    }
                 } else {
-                    menuTotals[order.menu] = order.qty;
+                    const menusInOrder = order.menu.split(' + ');
+                    menusInOrder.forEach(m => {
+                        const cleanName = m.split(' x ')[0].trim();
+                        if(menuTotals[cleanName] !== undefined) {
+                            menuTotals[cleanName] += order.qty;
+                        }
+                    });
                 }
                 totalOrdersCount += order.qty;
             });
@@ -706,29 +811,25 @@
                 const card = document.createElement('div');
                 card.className = `order-card ${order.type === '포장' ? 'takeout' : 'here'}`;
 
+                const payBadgeClass = (order.payType === '현금') ? 'cash' : 'transfer';
+                const payBadgeIcon = (order.payType === '현금') ? '💵 현금' : '💳 계좌이체';
+
                 let badgeHtml = `<span class="badge ${order.type === '포장' ? 'takeout' : 'here'}">${order.type}</span>`;
+                badgeHtml += ` <span class="badge ${payBadgeClass}">${payBadgeIcon}</span>`;
                 
                 if (order.note) {
-                    const notes = order.note.split('/');
-                    const mainNotes = notes[0].split(',').map(s => s.trim());
-                    mainNotes.forEach(n => {
-                        if (n !== '없음') {
-                            badgeHtml += ` <span class="badge note">${n}</span>`;
-                        }
+                    order.note.split(' | ').forEach(part => {
+                        badgeHtml += ` <span class="badge note">${part}</span>`;
                     });
-                    if (notes.length > 1) {
-                        badgeHtml += ` <span class="badge peanut">${notes[1].trim()}</span>`;
-                    }
                 }
 
                 card.innerHTML = `
                     <div class="order-info">
                         <div class="badge-group">${badgeHtml}</div>
                         <div class="menu-name">
-                            <span>${order.menu} <strong style="color:#ff9500;">x ${order.qty}</strong></span>
-                            <span class="customer-name">👤 ${order.customer}</span>
+                            <span>${order.menu}</span>
                         </div>
-                        <div class="time">주문자 입력 시간: ${order.time}</div>
+                        <div class="time">주문 접수 시간: ${order.time}</div>
                     </div>
                     <div class="card-btn-group">
                         <button class="big-action-btn done-big-btn" onclick="completeOrder(${order.id})">조리 완료 ✅</button>
@@ -774,8 +875,8 @@
                     <tr>
                         <th>시간</th>
                         <th>구분</th>
-                        <th>메뉴/옵션/수량</th>
-                        <th>손님</th>
+                        <th>결제</th>
+                        <th>메뉴/옵션</th>
                     </tr>
             `;
 
@@ -788,8 +889,8 @@
                         <tr>
                             <td>${h.time}</td>
                             <td>${h.type}</td>
-                            <td style="text-align:left;"><b>${h.menu}</b> x ${h.qty}<br><span style="font-size:0.75rem; color:#666;">${h.note}</span></td>
-                            <td>${h.customer}</td>
+                            <td>${h.payType || '계좌이체'}</td>
+                            <td style="text-align:left;"><b>${h.menu}</b><br><span style="font-size:0.75rem; color:#666;">${h.note}</span></td>
                         </tr>
                     `;
                 });
