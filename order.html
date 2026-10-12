@@ -44,7 +44,7 @@
         .submit-btn:active { background: #0056b3; }
         .cancel-btn { background: #e0e0e0; color: #333; display: none; }
 
-        /* 화면 꽉 차는 중앙 완료 오버레이 스타일 */
+        /* 일반 신규 주문 시에만 띄울 화면 꽉 차는 중앙 완료 오버레이 스타일 */
         #fullscreenToast {
             position: fixed;
             top: 0;
@@ -83,8 +83,8 @@
     <div id="fullscreenToast">
         <div class="toast-box">
             <div class="success-icon">🎉</div>
-            <div class="main-text" id="toastMainText">주문이 완료되었습니다!</div>
-            <div class="sub-text" id="toastSubText">Order Completed!</div>
+            <div class="main-text">주문이 완료되었습니다!</div>
+            <div class="sub-text">Order Completed!</div>
         </div>
     </div>
 
@@ -415,30 +415,22 @@
             }
         }
 
-        function showFullscreenToast(isEdit = false) {
+        function handlePostSubmit() {
+            // 스크롤 맨 위로 이동
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            const mainTextEl = document.getElementById('toastMainText');
-            const subTextEl = document.getElementById('toastSubText');
-
-            if (isEdit) {
-                mainTextEl.innerText = "주문이 수정되었습니다!";
-                subTextEl.innerText = "Order Updated!";
+            if (fromKitchen) {
+                // 주방 보드에서 넘어온 수정을 완료했을 때는 알림 팝업 없이 즉시 주방 보드로 복귀
+                window.location.href = 'kitchen.html';
             } else {
-                mainTextEl.innerText = "주문이 완료되었습니다!";
-                subTextEl.innerText = "Order Completed!";
-            }
-
-            const toast = document.getElementById('fullscreenToast');
-            toast.style.display = 'flex';
-            setTimeout(() => {
-                toast.style.display = 'none';
-                if (fromKitchen) {
-                    window.location.href = 'kitchen.html';
-                } else {
+                // 일반 주문 등록일 때는 화면 꽉 차는 완성 팝업을 1.5초 띄웠다가 양식 리셋
+                const toast = document.getElementById('fullscreenToast');
+                toast.style.display = 'flex';
+                setTimeout(() => {
+                    toast.style.display = 'none';
                     resetForm();
-                }
-            }, 1500);
+                }, 1500);
+            }
         }
 
         document.getElementById('orderForm').addEventListener('submit', (e) => {
@@ -502,7 +494,7 @@
                 }
                 
                 db.ref('night_market').update({ orders: orders }).then(() => {
-                    showFullscreenToast(editId ? true : false);
+                    handlePostSubmit();
                 });
             });
         });
