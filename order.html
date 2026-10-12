@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>야시장 주문 접수</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f0f2f5; color: #333; padding: 15px; }
+        header { text-align: center; margin-bottom: 12px; }
+        h1 { font-size: 1.4rem; color: #1a1a1a; margin-bottom: 4px; }
+        .connection-status { font-size: 0.8rem; color: #2e7d32; background: #e8f5e9; padding: 4px 10px; border-radius: 12px; display: inline-block; font-weight: bold; }
+        
+        .container { display: flex; flex-direction: column; gap: 15px; max-width: 600px; margin: 0 auto; }
+        
+        .card { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 1.05rem; margin-bottom: 12px; color: #007aff; display: flex; justify-content: space-between; align-items: center; }
+        
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 600; color: #555; }
+        
+        .option-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        .option-btn { flex: 1; min-width: 100px; padding: 12px 8px; border: 2px solid #ddd; background: #fff; border-radius: 8px; font-size: 0.9rem; font-weight: bold; cursor: pointer; text-align: center; transition: all 0.2s; color: #555; }
+        
+        .option-btn.type-btn.active.takeout { background: #ff3b30; color: white; border-color: #ff3b30; }
+        .option-btn.type-btn.active.here { background: #34c759; color: white; border-color: #34c759; }
+        .option-btn.menu-btn.active { background: #007aff; color: white; border-color: #007aff; }
+        .option-btn.pay-btn.active.transfer { background: #5856d6; color: white; border-color: #5856d6; }
+        .option-btn.pay-btn.active.cash { background: #ff9500; color: white; border-color: #ff9500; }
+        .option-btn.note-btn.active { background: #5856d6; color: white; border-color: #5856d6; }
+        .option-btn.peanut-btn.active { background: #af52de; color: white; border-color: #af52de; }
+        .option-btn.pt-qty-btn.active, .option-btn.oc-qty-btn.active { background: #ff9500; color: white; border-color: #ff9500; }
+        .option-btn.octopus-btn.active { background: #007aff; color: white; border-color: #007aff; }
+
+        .menu-config-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 12px; margin-top: 10px; }
+        .menu-config-title { font-size: 0.9rem; font-weight: bold; color: #007aff; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+
+        .allergy-notice { font-size: 0.75rem; color: #d32f2f; background: #ffebee; padding: 6px 10px; border-radius: 6px; margin-top: 6px; font-weight: 600; line-height: 1.3; }
+        .no-card-notice { font-size: 0.75rem; color: #d32f2f; background: #ffebee; padding: 6px 10px; border-radius: 6px; margin-top: 6px; font-weight: bold; display: block; }
+
+        .btn-group { display: flex; gap: 8px; margin-top: 15px; }
+        .action-btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; }
+        .submit-btn { background: #007aff; color: white; }
+        .submit-btn:active { background: #0056b3; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>🍢 야시장 주문 접수 페이지</h1>
+        <div class="connection-status" id="syncStatus">🔄 실시간 클라우드 연결 중...</div>
+    </header>
+
+    <div class="container">
+        <div class="card" id="formCard">
+            <h2 id="formTitle">
+                <span>📝 새 주문 등록 (New Order)</span>
+            </h2>
+            <form id="orderForm">
+                <div class="form-group">
+                    <label>구분 / Order Type (선택 필수)</label>
+                    <div class="option-group">
+                        <button type="button" class="option-btn type-btn" data-type="포장">포장 (Take out)</button>
+                        <button type="button" class="option-btn type-btn" data-type="바로">바로-다회용기 (Reusable)</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>결제 방식 / Payment Method (선택 필수)</label>
+                    <div class="option-group">
+                        <button type="button" class="option-btn pay-btn active transfer" data-pay="계좌이체">💳 계좌이체</button>
+                        <button type="button" class="option-btn pay-btn" data-pay="현금">💵 현금</button>
+                    </div>
+                    <div class="no-card-notice">
+                        ⚠️ 카드 결제는 안 됩니다 (Card payment is NOT accepted)
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>메뉴 선택 / Select Menu (복수 선택 가능)</label>
+                    <div class="option-group" id="menuContainer">
+                        <button type="button" class="option-btn menu-btn" data-menu="팟타이">팟타이 (Pad Thai)</button>
+                        <button type="button" class="option-btn menu-btn" data-menu="문어꼬치">문어꼬치 (Octopus Skewer)</button>
+                    </div>
+                </div>
+
+                <div class="menu-config-box" id="padthaiConfigBox" style="display: none;">
+                    <div class="menu-config-title">🍜 팟타이 상세 설정</div>
+                    <div class="form-group">
+                        <label>수량 선택 (1~4)</label>
+                        <div class="option-group" id="padthaiQtyContainer"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>특이사항 (복수 선택)</label>
+                        <div class="option-group" id="padthaiNoteContainer"></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>땅콩 토핑</label>
+                        <div class="option-group" id="peanutContainer"></div>
+                        <div class="allergy-notice">⚠️ 땅콩 알레르기가 있으신 경우 말씀해 주세요!</div>
+                    </div>
+                </div>
+
+                <div class="menu-config-box" id="octopusConfigBox" style="display: none;">
+                    <div class="menu-config-title">🐙 문어꼬치 상세 설정</div>
+                    <div class="form-group">
+                        <label>수량 선택 (1~4)</label>
+                        <div class="option-group" id="octopusQtyContainer"></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>소스 선택</label>
+                        <div class="option-group" id="octopusContainer"></div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" id="submitBtn" class="action-btn submit-btn">주문 등록하기 🚀</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://night-market-order-8a9ac-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let selectedType = null;
+        let selectedPay = '계좌이체';
+        let selectedMenus = [];
+        
+        let menuDetails = {
+            '팟타이': { qty: 1, notes: ['없음'], peanut: '땅콩 뿌려요' },
+            '문어꼬치': { qty: 1, sauce: '기본 소스' }
+        };
+
+        db.ref('night_market').on('value', () => {
+            document.getElementById('syncStatus').innerText = '🟢 실시간 동기화 활성화됨';
+        }, () => {
+            document.getElementById('syncStatus').innerText = '🔴 동기화 오류 발생';
+        });
+
+        const typeButtons = document.querySelectorAll('.type-btn');
+        typeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                typeButtons.forEach(b => b.classList.remove('active', 'takeout', 'here'));
+                selectedType = e.target.getAttribute('data-type');
+                if(selectedType === '포장') {
+                    e.target.classList.add('active', 'takeout');
+                } else {
+                    e.target.classList.add('active', 'here');
+                }
+            });
+        });
+
+        const payButtons = document.querySelectorAll('.pay-btn');
+        payButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                payButtons.forEach(b => b.classList.remove('active', 'transfer', 'cash'));
+                selectedPay = e.target.getAttribute('data-pay');
+                if(selectedPay === '계좌이체') {
+                    e.target.classList.add('active', 'transfer');
+                } else {
+                    e.target.classList.add('active', 'cash');
+                }
+            });
+        });
+
+        const menuButtons = document.querySelectorAll('.menu-btn');
+        menuButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const menu = e.target.getAttribute('data-menu');
+                if (selectedMenus.includes(menu)) {
+                    selectedMenus = selectedMenus.filter(m => m !== menu);
+                    e.target.classList.remove('active');
+                } else {
+                    selectedMenus.push(menu);
+                    e.target.classList.add('active');
+                }
+                updateDynamicOptionSections();
+            });
+        });
+
+        function updateDynamicOptionSections() {
+            const padthaiBox = document.getElementById('padthaiConfigBox');
+            const octopusBox = document.getElementById('octopusConfigBox');
+
+            if (selectedMenus.includes('팟타이')) {
+                padthaiBox.style.display = 'block';
+                renderPadthaiNotes();
+                renderPadthaiQty();
+                renderPeanutButtons();
+            } else {
+                padthaiBox.style.display = 'none';
+            }
+
+            if (selectedMenus.includes('문어꼬치')) {
+                octopusBox.style.display = 'block';
+                renderOctopusQty();
+                renderOctopusSauceButtons();
+            } else {
+                octopusBox.style.display = 'none';
+            }
+        }
+
+        function renderPadthaiNotes() {
+            const container = document.getElementById('padthaiNoteContainer');
+            container.innerHTML = '';
+            const options = ['없음', '더 맵게', '아이가 먹음', '새우 알레르기 있음'];
+            let currentNotes = menuDetails['팟타이'].notes;
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'option-btn note-btn';
+                btn.innerText = opt;
+                if (currentNotes.includes(opt)) btn.classList.add('active');
+
+                btn.addEventListener('click', () => {
+                    if (opt === '없음') {
+                        currentNotes = ['없음'];
+                    } else {
+                        currentNotes = currentNotes.filter(n => n !== '없음');
+                        if (opt === '더 맵게') currentNotes = currentNotes.filter(n => n !== '아이가 먹음');
+                        else if (opt === '아이가 먹음') currentNotes = currentNotes.filter(n => n !== '더 맵게');
+
+                        if (currentNotes.includes(opt)) currentNotes = currentNotes.filter(n => n !== opt);
+                        else currentNotes.push(opt);
+
+                        if (currentNotes.length === 0) currentNotes = ['없음'];
+                    }
+                    menuDetails['팟타이'].notes = currentNotes;
+                    renderPadthaiNotes();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        function renderPadthaiQty() {
+            const container = document.getElementById('padthaiQtyContainer');
+            container.innerHTML = '';
+            for(let i = 1; i <= 4; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `option-btn pt-qty-btn ${menuDetails['팟타이'].qty === i ? 'active' : ''}`;
+                btn.innerText = i;
+                const val = i;
+                btn.addEventListener('click', () => {
+                    menuDetails['팟타이'].qty = val;
+                    renderPadthaiQty();
+                });
+                container.appendChild(btn);
+            }
+        }
+
+        function renderPeanutButtons() {
+            const container = document.getElementById('peanutContainer');
+            container.innerHTML = '';
+            const options = ['땅콩 뿌려요', '땅콩 안뿌려요'];
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `option-btn peanut-btn ${menuDetails['팟타이'].peanut === opt ? 'active' : ''}`;
+                btn.innerText = opt;
+                const val = opt;
+                btn.addEventListener('click', () => {
+                    menuDetails['팟타이'].peanut = val;
+                    renderPeanutButtons();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        function renderOctopusQty() {
+            const container = document.getElementById('octopusQtyContainer');
+            container.innerHTML = '';
+            for(let i = 1; i <= 4; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `option-btn oc-qty-btn ${menuDetails['문어꼬치'].qty === i ? 'active' : ''}`;
+                btn.innerText = i;
+                const val = i;
+                btn.addEventListener('click', () => {
+                    menuDetails['문어꼬치'].qty = val;
+                    renderOctopusQty();
+                });
+                container.appendChild(btn);
+            }
+        }
+
+        function renderOctopusSauceButtons() {
+            const container = document.getElementById('octopusContainer');
+            container.innerHTML = '';
+            const options = ['기본 소스', '매운 소스'];
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `option-btn octopus-btn ${menuDetails['문어꼬치'].sauce === opt ? 'active' : ''}`;
+                btn.innerText = opt;
+                const val = opt;
+                btn.addEventListener('click', () => {
+                    menuDetails['문어꼬치'].sauce = val;
+                    renderOctopusSauceButtons();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        document.getElementById('orderForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if(!selectedType) { alert('구분(포장/바로)을 선택해주세요!'); return; }
+            if(selectedMenus.length === 0) { alert('메뉴를 1개 이상 선택해주세요!'); return; }
+
+            let menuParts = [];
+            let detailParts = [];
+            let totalOrderQty = 0;
+
+            selectedMenus.forEach(menu => {
+                const q = menuDetails[menu].qty;
+                totalOrderQty += q;
+                menuParts.push(`${menu} x ${q}`);
+
+                if (menu === '팟타이') {
+                    const noteStr = menuDetails['팟타이'].notes.join(', ');
+                    detailParts.push(`팟타이[${noteStr} / ${menuDetails['팟타이'].peanut}]`);
+                } else if (menu === '문어꼬치') {
+                    detailParts.push(`문어꼬치[${menuDetails['문어꼬치'].sauce}]`);
+                }
+            });
+
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const newOrder = {
+                id: Date.now(),
+                type: selectedType,
+                payType: selectedPay,
+                menu: menuParts.join(' + '),
+                note: detailParts.join(' | '),
+                qty: totalOrderQty,
+                menuDetails: JSON.parse(JSON.stringify(menuDetails)),
+                time: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                hourKey: `${hours}:00`
+            };
+
+            db.ref('night_market').once('value').then((snapshot) => {
+                const data = snapshot.val() || {};
+                const orders = data.orders || [];
+                orders.push(newOrder);
+                
+                db.ref('night_market').update({ orders: orders }).then(() => {
+                    alert('주문이 성공적으로 접수되었습니다! 🚀');
+                    resetForm();
+                });
+            });
+        });
+
+        function resetForm() {
+            document.getElementById('orderForm').reset();
+            selectedType = null;
+            selectedPay = '계좌이체';
+            selectedMenus = [];
+            menuDetails = {
+                '팟타이': { qty: 1, notes: ['없음'], peanut: '땅콩 뿌려요' },
+                '문어꼬치': { qty: 1, sauce: '기본 소스' }
+            };
+            typeButtons.forEach(b => b.classList.remove('active', 'takeout', 'here'));
+            payButtons.forEach(b => {
+                b.classList.remove('active', 'transfer', 'cash');
+                if(b.getAttribute('data-pay') === '계좌이체') b.classList.add('active', 'transfer');
+            });
+            menuButtons.forEach(b => b.classList.remove('active'));
+            document.getElementById('padthaiConfigBox').style.display = 'none';
+            document.getElementById('octopusConfigBox').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
