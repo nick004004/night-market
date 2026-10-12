@@ -44,7 +44,7 @@
         .submit-btn:active { background: #0056b3; }
         .cancel-btn { background: #e0e0e0; color: #333; display: none; }
 
-        /* 화면을 꽉 채우는 대형 중앙 완료 오버레이 스타일 */
+        /* 화면 꽉 차는 중앙 완료 오버레이 스타일 */
         #fullscreenToast {
             position: fixed;
             top: 0;
@@ -67,27 +67,11 @@
             max-width: 90%;
             width: 400px;
         }
-        .toast-box .success-icon {
-            font-size: 3.5rem;
-            margin-bottom: 15px;
-        }
-        .toast-box .main-text {
-            font-size: 1.6rem;
-            font-weight: bold;
-            color: #34c759;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-        }
-        .toast-box .sub-text {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #555;
-        }
+        .toast-box .success-icon { font-size: 3.5rem; margin-bottom: 15px; }
+        .toast-box .main-text { font-size: 1.6rem; font-weight: bold; color: #34c759; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .toast-box .sub-text { font-size: 1.1rem; font-weight: bold; color: #555; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .editing-mode-bg { background-color: #fff8e1 !important; border: 2px dashed #ff9500; }
     </style>
@@ -96,12 +80,11 @@
 </head>
 <body>
 
-    <!-- 화면 꽉 차는 중앙 완료 팝업 -->
     <div id="fullscreenToast">
         <div class="toast-box">
             <div class="success-icon">🎉</div>
-            <div class="main-text">주문이 완료되었습니다!</div>
-            <div class="sub-text">Order Completed!</div>
+            <div class="main-text" id="toastMainText">주문이 완료되었습니다!</div>
+            <div class="sub-text" id="toastSubText">Order Completed!</div>
         </div>
     </div>
 
@@ -132,9 +115,7 @@
                         <button type="button" class="option-btn pay-btn active transfer" data-pay="계좌이체">💳 계좌이체</button>
                         <button type="button" class="option-btn pay-btn" data-pay="현금">💵 현금</button>
                     </div>
-                    <div class="no-card-notice">
-                        ⚠️ 카드 결제는 안 됩니다 (Card payment is NOT accepted)
-                    </div>
+                    <div class="no-card-notice">⚠️ 카드 결제는 안 됩니다 (Card payment is NOT accepted)</div>
                 </div>
                 
                 <div class="form-group">
@@ -175,7 +156,7 @@
                 </div>
 
                 <div class="btn-group">
-                    <button type="button" id="cancelEditBtn" class="action-btn cancel-btn" onclick="resetForm()">수정 취소</button>
+                    <button type="button" id="cancelEditBtn" class="action-btn cancel-btn" onclick="cancelEdit()">수정 취소</button>
                     <button type="submit" id="submitBtn" class="action-btn submit-btn">주문 등록하기 🚀</button>
                 </div>
             </form>
@@ -200,6 +181,7 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const editParam = urlParams.get('edit');
+        const fromKitchen = urlParams.get('from') === 'kitchen';
 
         db.ref('night_market').on('value', (snapshot) => {
             document.getElementById('syncStatus').innerText = '🟢 실시간 동기화 활성화됨';
@@ -425,19 +407,38 @@
             document.getElementById('formCard').classList.add('editing-mode-bg');
         }
 
-        // 화면 꽉 차는 중앙 팝업을 띄우고 스크롤을 맨 위로 올리는 함수
-        function showFullscreenToast() {
-            // 부드럽게 맨 위로 스크롤 이동
+        function cancelEdit() {
+            if (fromKitchen) {
+                window.location.href = 'kitchen.html';
+            } else {
+                resetForm();
+            }
+        }
+
+        function showFullscreenToast(isEdit = false) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const mainTextEl = document.getElementById('toastMainText');
+            const subTextEl = document.getElementById('toastSubText');
+
+            if (isEdit) {
+                mainTextEl.innerText = "주문이 수정되었습니다!";
+                subTextEl.innerText = "Order Updated!";
+            } else {
+                mainTextEl.innerText = "주문이 완료되었습니다!";
+                subTextEl.innerText = "Order Completed!";
+            }
 
             const toast = document.getElementById('fullscreenToast');
             toast.style.display = 'flex';
             setTimeout(() => {
                 toast.style.display = 'none';
-                if (editParam) {
-                    window.location.href = 'order.html';
+                if (fromKitchen) {
+                    window.location.href = 'kitchen.html';
+                } else {
+                    resetForm();
                 }
-            }, 2000); // 2초 뒤 자동 사라짐
+            }, 1500);
         }
 
         document.getElementById('orderForm').addEventListener('submit', (e) => {
@@ -501,8 +502,7 @@
                 }
                 
                 db.ref('night_market').update({ orders: orders }).then(() => {
-                    showFullscreenToast(); // 스크롤 맨 위로 이동 + 중앙 팝업 호출
-                    resetForm();
+                    showFullscreenToast(editId ? true : false);
                 });
             });
         });
